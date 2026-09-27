@@ -140,7 +140,7 @@ export default function KitchenPage() {
                         {o.orderNumber}
                       </div>
                       <div className="text-xs text-fusion-muted">
-                        {o.orderType === "DINE_IN" ? "Dine in" : "Takeout"}
+                        Takeout
                       </div>
                     </div>
                     <p className="text-xs text-fusion-muted">

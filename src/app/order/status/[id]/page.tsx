@@ -101,7 +101,7 @@ export default function OrderStatusPage({ params }: { params: { id: string } }) 
         {order.orderNumber}
       </h1>
       <p className="mt-1 text-fusion-muted">
-        {order.orderType === "DINE_IN" ? copy.dineIn : copy.takeout}
+        {copy.takeout}
         {order.customerName ? ` · ${order.customerName}` : ""}
       </p>
 

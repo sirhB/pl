@@ -17,8 +17,7 @@ export function CartDock() {
       >
         <div>
           <div className="text-[11px] font-bold uppercase tracking-wider opacity-70">
-            {cart.itemCount} item{cart.itemCount === 1 ? "" : "s"} ·{" "}
-            {cart.orderType === "DINE_IN" ? copy.dineIn : copy.takeout}
+            {cart.itemCount} item{cart.itemCount === 1 ? "" : "s"} · {copy.takeout}
           </div>
           <div className="font-display text-sm font-extrabold uppercase tracking-wide">
             {copy.viewCart}

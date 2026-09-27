@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 export const metadata: Metadata = {
   title: "Prime Fusion | Jamaican Fusion, Your Way",
   description:
-    "Real Jamaican flavor from the Prime Fusion food truck. Build your bowl, order wings and empanadas, and pay by card. We text you when it is ready.",
+    "Real Jamaican flavor from the Prime Fusion food truck. Build your bowl, order wings and empanadas, and pay by card. Takeout pickup — we text you when it is ready.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

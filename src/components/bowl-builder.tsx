@@ -611,13 +611,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
         {/* CENTER */}
         <div className="order-1 xl:order-2">
           <div className="glass-panel relative overflow-hidden rounded-[28px] shadow-glass">
-            <BowlPreview
-              bowlKey={bowlKey}
-              tier={tier}
-              base={base}
-              proteins={proteins}
-              sides={sides}
-            />
+            <BowlPreview bowlKey={bowlKey} />
           </div>
         </div>
 

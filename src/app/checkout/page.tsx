@@ -36,7 +36,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderType: cart.orderType,
+          orderType: "TOGO",
           qrStationCode: cart.qrStationCode,
           customerName: name,
           customerPhone: phone,
@@ -88,7 +88,7 @@ export default function CheckoutPage() {
           {copy.checkout}
         </h1>
         <p className="mt-1 text-fusion-muted">
-          {cart.orderType === "DINE_IN" ? copy.dineIn : copy.takeout}
+          {copy.takeout}
           {cart.qrStationCode ? ` · ${cart.qrStationCode}` : ""}
         </p>
         <ul className="mt-6 space-y-3">

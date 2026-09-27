@@ -189,7 +189,7 @@ export async function seedDatabase(force = false) {
     "wings",
     "Prime Fusion Wings",
     4,
-    "Jerk-seasoned wings with island heat."
+    "Jerk-seasoned wings. Pick one flavor, or two for half and half."
   );
   const empanadas = category("empanadas", "Empanadas", 5, "Mix and match your favorites.");
   const sides = category("sides", "Sides", 6, "Fresh sides from the truck.");
@@ -431,7 +431,7 @@ export async function seedDatabase(force = false) {
     id: cuid(),
     name: "Wing Flavor",
     minSelect: 1,
-    maxSelect: 1,
+    maxSelect: 2,
     isRequired: true,
   };
   db.modifierGroups.push(wingFlavor);
@@ -452,7 +452,8 @@ export async function seedDatabase(force = false) {
     item(wingsCat.id, {
       name: "Wings (6 pieces)",
       slug: "wings-6",
-      description: "Starting at $12. Choose your wing flavor.",
+      description:
+        "Six pieces. Pick one flavor for all, or pick two flavors for half and half (three pieces each).",
       priceCents: 1200,
       costCents: 480,
       sortOrder: 1,
@@ -460,7 +461,8 @@ export async function seedDatabase(force = false) {
     item(wingsCat.id, {
       name: "Wings (10 pieces)",
       slug: "wings-10",
-      description: "Ten pieces. Choose your wing flavor.",
+      description:
+        "Ten pieces. Pick one flavor for all, or pick two flavors for half and half (five pieces each).",
       priceCents: 1800,
       costCents: 780,
       sortOrder: 2,
@@ -468,7 +470,8 @@ export async function seedDatabase(force = false) {
     item(wingsCat.id, {
       name: "Wings (20 pieces)",
       slug: "wings-20",
-      description: "Twenty pieces. Choose your wing flavor.",
+      description:
+        "Twenty pieces. Pick one flavor for all, or pick two flavors for half and half (ten pieces each).",
       priceCents: 3400,
       costCents: 1500,
       sortOrder: 3,
@@ -476,7 +479,8 @@ export async function seedDatabase(force = false) {
     item(wingsCat.id, {
       name: "Wing Combo",
       slug: "wing-combo",
-      description: "Six wings, fries, Jamaican coleslaw, and Fruit Punch.",
+      description:
+        "Six wings, fries, Jamaican coleslaw, and Fruit Punch. Choose one or two wing flavors (half and half).",
       priceCents: 1800,
       costCents: 720,
       sortOrder: 4,
@@ -624,42 +628,124 @@ export async function seedDatabase(force = false) {
     sortOrder: 3,
   });
 
-  item(deals.id, {
+  const signatureBowlNames = bowlItems.map((b) => b.name);
+  const premiumBowlNames = bowlItems
+    .filter(
+      (b) =>
+        b.slug === "oxtail-bowl" ||
+        b.slug === "pepper-steak-bowl" ||
+        b.slug === "mango-glazed-salmon-bowl"
+    )
+    .map((b) => b.name);
+
+  function makePickGroup(
+    name: string,
+    options: string[],
+    opts?: { required?: boolean; defaultName?: string }
+  ) {
+    const group = {
+      id: cuid(),
+      name,
+      minSelect: opts?.required === false ? 0 : 1,
+      maxSelect: 1,
+      isRequired: opts?.required !== false,
+    };
+    db.modifierGroups.push(group);
+    for (const optName of options) {
+      db.modifierOptions.push({
+        id: cuid(),
+        groupId: group.id,
+        name: optName,
+        priceDeltaCents: 0,
+        costDeltaCents: 0,
+        isDefault: optName === (opts?.defaultName || options[0]),
+        isActive: true,
+        inventoryItemId: null,
+      });
+    }
+    return group;
+  }
+
+  const dealTwoBowls = item(deals.id, {
     name: "Two Bowls Deal",
     slug: "deal-2-bowls",
-    description: "Any two bowls from the signature list for $25.",
+    description:
+      "Any two signature bowls for $25. Choose each bowl — same extras as ordering them alone.",
     priceCents: 2500,
     costCents: 1100,
     sortOrder: 1,
     tags: ["deal"],
   });
-  item(deals.id, {
+  const dealPremium = item(deals.id, {
     name: "Two Premium Bowls",
     slug: "deal-2-premium-bowls",
-    description: "Pepper Steak, Mango Glazed Salmon, or Oxtail — pick two for $30.",
+    description:
+      "Pepper Steak, Mango Glazed Salmon, or Oxtail — pick two for $30. Customize each bowl.",
     priceCents: 3000,
     costCents: 1500,
     sortOrder: 2,
     tags: ["deal"],
   });
-  item(deals.id, {
+  const dealBowlCombo = item(deals.id, {
     name: "Bowl Combo",
     slug: "deal-bowl-combo",
-    description: "One bowl, one empanada, and fruit punch.",
+    description: "One signature bowl, one empanada, and fruit punch. Customize every item.",
     priceCents: 2000,
     costCents: 800,
     sortOrder: 3,
     tags: ["deal"],
   });
-  item(deals.id, {
+  const dealFullFusion = item(deals.id, {
     name: "Full Fusion Combo",
     slug: "deal-full-fusion",
-    description: "Two bowls, two empanadas, and two fruit punches.",
+    description:
+      "Two signature bowls, two empanadas, and two fruit punches. Customize every item in the combo.",
     priceCents: 3500,
     costCents: 1500,
     sortOrder: 4,
     tags: ["deal"],
   });
+
+  const dealBowl1 = makePickGroup("Bowl one", signatureBowlNames, {
+    defaultName: signatureBowlNames[0],
+  });
+  const dealBowl2 = makePickGroup("Bowl two", signatureBowlNames, {
+    defaultName: signatureBowlNames[4] || signatureBowlNames[0],
+  });
+  const premiumBowl1 = makePickGroup("Bowl one", premiumBowlNames);
+  const premiumBowl2 = makePickGroup("Bowl two", premiumBowlNames, {
+    defaultName: premiumBowlNames[1] || premiumBowlNames[0],
+  });
+  const comboBowl = makePickGroup("Choose your bowl", signatureBowlNames);
+  const comboEmpanada = makePickGroup("Choose your empanada", [
+    "Chicken Empanada",
+    "Beef Empanada",
+  ]);
+  const fullBowl1 = makePickGroup("Bowl one", signatureBowlNames);
+  const fullBowl2 = makePickGroup("Bowl two", signatureBowlNames, {
+    defaultName: signatureBowlNames[1] || signatureBowlNames[0],
+  });
+  const fullEmp1 = makePickGroup("Empanada one", ["Chicken Empanada", "Beef Empanada"]);
+  const fullEmp2 = makePickGroup("Empanada two", ["Chicken Empanada", "Beef Empanada"], {
+    defaultName: "Beef Empanada",
+  });
+
+  db.menuItemModifiers.push(
+    { menuItemId: dealTwoBowls.id, groupId: dealBowl1.id },
+    { menuItemId: dealTwoBowls.id, groupId: dealBowl2.id },
+    { menuItemId: dealTwoBowls.id, groupId: bowlExtras.id },
+    { menuItemId: dealPremium.id, groupId: premiumBowl1.id },
+    { menuItemId: dealPremium.id, groupId: premiumBowl2.id },
+    { menuItemId: dealPremium.id, groupId: bowlExtras.id },
+    { menuItemId: dealBowlCombo.id, groupId: comboBowl.id },
+    { menuItemId: dealBowlCombo.id, groupId: comboEmpanada.id },
+    { menuItemId: dealBowlCombo.id, groupId: bowlExtras.id },
+    { menuItemId: dealFullFusion.id, groupId: fullBowl1.id },
+    { menuItemId: dealFullFusion.id, groupId: fullBowl2.id },
+    { menuItemId: dealFullFusion.id, groupId: fullEmp1.id },
+    { menuItemId: dealFullFusion.id, groupId: fullEmp2.id },
+    { menuItemId: dealFullFusion.id, groupId: bowlExtras.id }
+  );
 
   const deal = {
     id: cuid(),
@@ -741,8 +827,8 @@ export async function seedDatabase(force = false) {
 
   for (const s of [
     { code: "truck-window", label: "Truck Window", orderType: "TOGO" as const },
-    { code: "picnic-a", label: "Picnic Table A", orderType: "DINE_IN" as const },
-    { code: "picnic-b", label: "Picnic Table B", orderType: "DINE_IN" as const },
+    { code: "picnic-a", label: "Picnic Table A Pickup", orderType: "TOGO" as const },
+    { code: "picnic-b", label: "Picnic Table B Pickup", orderType: "TOGO" as const },
     { code: "catering-prep", label: "Catering Pickup", orderType: "TOGO" as const },
   ]) {
     db.qrStations.push({

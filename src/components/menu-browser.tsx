@@ -88,17 +88,24 @@ export function MenuBrowser({ categories }: Props) {
       priceDeltaCents: number;
     }> = [];
     let delta = 0;
+    const labelParts: string[] = [];
     for (const g of customizing.modifierGroups) {
-      for (const name of selectedMods[g.id] || []) {
+      const picks = selectedMods[g.id] || [];
+      for (const name of picks) {
         const opt = g.options.find((o) => o.name === name);
         const priceDeltaCents = opt?.priceDeltaCents || 0;
         delta += priceDeltaCents;
         modifiers.push({ groupName: g.name, optionName: name, priceDeltaCents });
       }
+      if (g.name === "Wing Flavor" && picks.length === 2) {
+        labelParts.push(copy.wingHalfLabel(picks[0], picks[1]));
+      } else if (picks.length > 0) {
+        labelParts.push(...picks);
+      }
     }
     const label =
-      modifiers.length > 0
-        ? `${customizing.name} · ${modifiers.map((m) => m.optionName).join(", ")}`
+      labelParts.length > 0
+        ? `${customizing.name} · ${labelParts.join(", ")}`
         : customizing.name;
     cart.addItem({
       menuItemId: customizing.id,
@@ -227,30 +234,60 @@ export function MenuBrowser({ categories }: Props) {
               </button>
             </div>
 
+            {(customizing.slug.startsWith("deal-") ||
+              customizing.tags?.includes("deal")) && (
+              <p className="mt-3 rounded-2xl border border-fusion-gold/20 bg-fusion-gold/10 px-3 py-2 text-xs text-fusion-amber">
+                {copy.dealCustomizeHint}
+              </p>
+            )}
+
             {customizing.modifierGroups.length > 0 && (
               <div className="mt-6 space-y-5">
-                {customizing.modifierGroups.map((g) => (
+                {customizing.modifierGroups.map((g) => {
+                  const picks = selectedMods[g.id] || [];
+                  const isWingFlavor = g.name === "Wing Flavor";
+                  return (
                   <div key={g.id}>
                     <div className="mb-2 flex items-center justify-between">
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-fusion-muted">
                         {g.name}
                       </p>
                       <span className="text-xs text-fusion-muted">
-                        {(selectedMods[g.id] || []).length} of {g.maxSelect}
+                        {picks.length} of {g.maxSelect}
                       </span>
                     </div>
+                    {isWingFlavor && (
+                      <p className="mb-2 text-xs text-fusion-muted">{copy.wingFlavorHint}</p>
+                    )}
+                    {isWingFlavor && picks.length === 2 && (
+                      <p className="mb-2 text-xs font-semibold text-fusion-gold">
+                        {copy.wingHalfLabel(picks[0], picks[1])}
+                      </p>
+                    )}
                     <ul className="space-y-2">
                       {g.options.map((o) => {
-                        const on = (selectedMods[g.id] || []).includes(o.name);
+                        const on = picks.includes(o.name);
                         const thumb =
                           optionImages[o.name] ||
-                          (o.name.includes("Plantain")
-                            ? menuImages.plantains
-                            : o.name.includes("Mac")
-                              ? menuImages.rastaPasta
-                              : o.name.includes("Jerk") || o.name.includes("Extra")
-                                ? menuImages.jerkChicken
-                                : null);
+                          (o.name.includes("Bowl") ||
+                          o.name.includes("Oxtail") ||
+                          o.name.includes("Salmon") ||
+                          o.name.includes("Steak") ||
+                          o.name.includes("Fried Rice")
+                            ? menuImages.fusionBowl
+                            : o.name.includes("Empanada")
+                              ? menuImages.empanadas
+                              : o.name.includes("Plantain")
+                                ? menuImages.plantains
+                                : o.name.includes("Mac")
+                                  ? menuImages.rastaPasta
+                                  : o.name.includes("Jerk") ||
+                                      o.name.includes("Extra") ||
+                                      o.name.includes("Barbecue") ||
+                                      o.name.includes("Mango") ||
+                                      o.name.includes("Sweet")
+                                    ? menuImages.wings
+                                    : null);
                         return (
                           <li key={o.id}>
                             <button
@@ -300,7 +337,8 @@ export function MenuBrowser({ categories }: Props) {
                       })}
                     </ul>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

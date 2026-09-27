@@ -37,10 +37,11 @@ export default function OrderPageClient() {
       }
       setMenu(menuData.categories);
 
+      // Takeout only — no dine in
+      cart.setOrderType("TOGO");
       if (stationRes && stationRes.ok) {
         const s = await stationRes.json();
         cart.setQrStationCode(s.code);
-        cart.setOrderType(s.orderType === "DINE_IN" ? "DINE_IN" : "TOGO");
         setStationLabel(s.label);
       } else if (station) {
         cart.setQrStationCode(station);
@@ -58,6 +59,11 @@ export default function OrderPageClient() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    cart.setOrderType("TOGO");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const byo = menu.find((c) => c.slug === "build-your-bowl");
   const one = byo?.items.find((i) => i.slug === "fusion-bowl-1-protein");
   const two = byo?.items.find((i) => i.slug === "fusion-bowl-2-protein");
@@ -68,28 +74,14 @@ export default function OrderPageClient() {
         {stationLabel ? (
           <p className="inline-flex items-center gap-2 rounded-full border border-fusion-emerald/30 bg-fusion-emerald/10 px-4 py-2 text-sm font-medium text-fusion-emerald">
             <span className="h-2 w-2 rounded-full bg-fusion-emerald" />
-            {copy.stationReady} {stationLabel} ·{" "}
-            {cart.orderType === "DINE_IN" ? copy.dineIn : copy.takeout}
+            {copy.stationReady} {stationLabel}
           </p>
         ) : (
           <p className="font-brush text-sm text-fusion-amber">{copy.streetLine}</p>
         )}
-        <div className="flex rounded-full border border-fusion-line/40 bg-white/5 p-1">
-          {(["TOGO", "DINE_IN"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => cart.setOrderType(t)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                cart.orderType === t
-                  ? "bg-fusion-gold text-fusion-void"
-                  : "text-fusion-muted hover:text-white"
-              }`}
-            >
-              {t === "TOGO" ? copy.takeout : copy.dineIn}
-            </button>
-          ))}
-        </div>
+        <p className="rounded-full border border-fusion-line/40 bg-white/5 px-4 py-2 text-sm font-semibold text-fusion-muted">
+          {copy.takeout} · {copy.pickupAtTruck}
+        </p>
       </div>
 
       {loading && (

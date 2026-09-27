@@ -80,7 +80,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setState(load());
+    const loaded = load();
+    setState({ ...loaded, orderType: "TOGO" });
     setHydrated(true);
   }, []);
 

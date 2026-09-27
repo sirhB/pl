@@ -3,7 +3,8 @@
 export const menuImages = {
   hero: "/images/menu/hero-cta.png",
   heroFallback: "/images/menu/hero-truck-spread.png",
-  fusionBowl: "/images/menu/fusion-bowl-hero.png",
+  fusionBowl: "/images/menu/bowl-marketing-static.png",
+  fusionBowlAnimated: "/images/menu/fusion-bowl-hero.png",
   jerkChicken: "/images/menu/protein-jerk-chicken.png",
   barbecueChicken: "/images/menu/protein-barbecue-chicken.png",
   jerkPork: "/images/menu/protein-jerk-pork.png",
