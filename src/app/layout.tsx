@@ -1,40 +1,23 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-
-const inter = Inter({ subsets: ['latin'] })
+import type { Metadata } from "next";
+import "./globals.css";
+import { CartProvider } from "@/contexts/cart-context";
+import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
-  title: 'Prime Lux Events - Luxury Event Rentals & Venue | Connecticut, NY, NJ',
-  description: 'Transform your celebration with Prime Lux Events luxury rental collection. Premium tables, chairs, decor & our stunning Shelton venue. Serving CT, RI, MA, NY, NJ.',
-  keywords: 'luxury event rentals, wedding rentals, party rentals Connecticut, event venue Shelton CT, premium furniture rental, corporate event rentals',
-  openGraph: {
-    title: 'Prime Lux Events - Luxury Event Rentals & Venue',
-    description: 'Transform your celebration with Prime Lux Events luxury rental collection.',
-    url: 'https://primeluxevents.com',
-    siteName: 'Prime Lux Events',
-    locale: 'en_US',
-    type: 'website',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  viewport: 'width=device-width, initial-scale=1',
-}
+  title: "Prime Fusion | Jamaican Fusion, Your Way",
+  description:
+    "QR-enabled ordering for Prime Fusion food truck — bowls, rasta pasta, wings, and more. Pay with Stripe.",
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className={`${inter.className} antialiased bg-gradient-to-br from-slate-50 via-white to-gold-50`}>
-        <div className="min-h-screen">
-          {children}
-        </div>
+    <html lang="en">
+      <body>
+        <CartProvider>
+          <SiteHeader />
+          <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+        </CartProvider>
       </body>
     </html>
-  )
+  );
 }

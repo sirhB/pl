@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String?  @unique
+  phone        String?  @unique
+  name         String?
+  passwordHash String?
+  role         String   @default("CUSTOMER") // ADMIN | STAFF | CUSTOMER
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders        Order[]
+  rewardAccount RewardAccount?
+  smsLogs       SmsLog[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items MenuItem[]
+}
+
+model MenuItem {
+  id              String   @id @default(cuid())
+  categoryId      String
+  name            String
+  slug            String   @unique
+  description     String?
+  priceCents      Int
+  costCents       Int      @default(0)
+  imageUrl        String?
+  isActive        Boolean  @default(true)
+  isBuildYourOwn  Boolean  @default(false)
+  allowsModifiers Boolean  @default(true)
+  prepMinutes     Int      @default(12)
+  sortOrder       Int      @default(0)
+  tags            String   @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  category   Category          @relation(fields: [categoryId], references: [id])
+  modifiers  MenuItemModifier[]
+  recipes    RecipeComponent[]
+  orderItems OrderItem[]
+  dealItems  DealOption[]
+}
+
+model ModifierGroup {
+  id         String  @id @default(cuid())
+  name       String
+  minSelect  Int     @default(0)
+  maxSelect  Int     @default(1)
+  isRequired Boolean @default(false)
+
+  options   ModifierOption[]
+  menuLinks MenuItemModifier[]
+}
+
+model ModifierOption {
+  id              String  @id @default(cuid())
+  groupId         String
+  name            String
+  priceDeltaCents Int     @default(0)
+  costDeltaCents  Int     @default(0)
+  isDefault       Boolean @default(false)
+  isActive        Boolean @default(true)
+  inventoryItemId String?
+
+  group         ModifierGroup  @relation(fields: [groupId], references: [id])
+  inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+}
+
+model MenuItemModifier {
+  menuItemId String
+  groupId    String
+
+  menuItem MenuItem      @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  group    ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([menuItemId, groupId])
+}
+
+model InventoryItem {
+  id               String   @id @default(cuid())
+  name             String
+  sku              String?  @unique
+  unit             String   @default("PORTION") // EACH | PORTION | OZ | LB
+  quantityOnHand   Float    @default(0)
+  reorderLevel     Float    @default(10)
+  costPerUnitCents Int      @default(0)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  recipeUses RecipeComponent[]
+  modifiers  ModifierOption[]
+  movements  InventoryMovement[]
+}
+
+model RecipeComponent {
+  id              String @id @default(cuid())
+  menuItemId      String
+  inventoryItemId String
+  quantityUsed    Float
+
+  menuItem      MenuItem      @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@unique([menuItemId, inventoryItemId])
+}
+
+model InventoryMovement {
+  id              String   @id @default(cuid())
+  inventoryItemId String
+  delta           Float
+  reason          String
+  orderId         String?
+  createdAt       DateTime @default(now())
+
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+}
+
+model Deal {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  priceCents  Int
+  isActive    Boolean @default(true)
+  rulesJson   String  @default("{}")
+
+  options DealOption[]
+}
+
+model DealOption {
+  id         String  @id @default(cuid())
+  dealId     String
+  menuItemId String
+  slotLabel  String?
+
+  deal     Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+model QrStation {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  label     String
+  orderType String   @default("DINE_IN") // DINE_IN | TOGO
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+model Order {
+  id                    String    @id @default(cuid())
+  orderNumber           String    @unique
+  customerId            String?
+  customerName          String?
+  customerPhone         String?
+  orderType             String    @default("TOGO")
+  status                String    @default("PENDING_PAYMENT")
+  qrStationId           String?
+  subtotalCents         Int       @default(0)
+  taxCents              Int       @default(0)
+  discountCents         Int       @default(0)
+  tipCents              Int       @default(0)
+  totalCents            Int       @default(0)
+  taxRateBps            Int       @default(750)
+  rewardPointsEarned    Int       @default(0)
+  rewardPointsRedeemed  Int       @default(0)
+  stripeSessionId       String?
+  stripePaymentIntentId String?
+  notes                 String?
+  estimatedReadyAt      DateTime?
+  paidAt                DateTime?
+  readyAt               DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  customer  User?        @relation(fields: [customerId], references: [id])
+  qrStation QrStation?   @relation(fields: [qrStationId], references: [id])
+  items     OrderItem[]
+  events    OrderEvent[]
+  smsLogs   SmsLog[]
+}
+
+model OrderItem {
+  id             String  @id @default(cuid())
+  orderId        String
+  menuItemId     String?
+  name           String
+  quantity       Int     @default(1)
+  unitPriceCents Int
+  totalCents     Int
+  costCents      Int     @default(0)
+  modifiersJson  String  @default("[]")
+  notes          String?
+
+  order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem? @relation(fields: [menuItemId], references: [id])
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  status    String
+  note      String?
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model TaxSetting {
+  id           String   @id @default(cuid())
+  name         String   @default("Sales Tax")
+  rateBps      Int      @default(750)
+  isInclusive  Boolean  @default(false)
+  jurisdiction String?
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+}
+
+model RewardAccount {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  phone       String   @unique
+  points      Int      @default(0)
+  lifetimePts Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id])
+  transactions RewardTransaction[]
+}
+
+model RewardTransaction {
+  id        String   @id @default(cuid())
+  accountId String
+  points    Int
+  reason    String
+  orderId   String?
+  createdAt DateTime @default(now())
+
+  account RewardAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+model SmsLog {
+  id         String   @id @default(cuid())
+  toPhone    String
+  body       String
+  status     String   @default("queued")
+  providerId String?
+  orderId    String?
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  order Order? @relation(fields: [orderId], references: [id])
+  user  User?  @relation(fields: [userId], references: [id])
+}
+
+model AppSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
