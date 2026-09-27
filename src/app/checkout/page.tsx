@@ -59,7 +59,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Demo / Stripe-not-configured path
       setDemoMode(true);
       cart.clear();
       router.push(`/order/status/${data.orderId}?paid=1`);
@@ -73,8 +72,8 @@ export default function CheckoutPage() {
   if (cart.items.length === 0 && !demoMode) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
-        <h1 className="font-display text-3xl text-white">Cart is empty</h1>
-        <Link href="/order" className="mt-6 inline-block text-fusion-yellow underline">
+        <h1 className="font-display text-3xl text-fusion-ink">Cart is empty</h1>
+        <Link href="/order" className="mt-6 inline-block font-semibold text-fusion-green">
           Back to menu
         </Link>
       </div>
@@ -84,7 +83,7 @@ export default function CheckoutPage() {
   return (
     <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[1.2fr_0.8fr]">
       <div>
-        <h1 className="font-display text-4xl text-white">Checkout</h1>
+        <h1 className="font-display text-4xl text-fusion-ink">Checkout</h1>
         <p className="mt-1 text-fusion-muted">
           {cart.orderType === "DINE_IN" ? "Dine in" : "To-go"}
           {cart.qrStationCode ? ` · station ${cart.qrStationCode}` : ""}
@@ -94,10 +93,10 @@ export default function CheckoutPage() {
           {cart.items.map((item) => (
             <li
               key={item.key}
-              className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-black/30 p-4"
+              className="flex items-start justify-between gap-3 rounded-[22px] bg-white p-4 shadow-card"
             >
               <div>
-                <div className="font-semibold text-white">
+                <div className="font-semibold text-fusion-ink">
                   {item.quantity}× {item.name}
                 </div>
                 {item.modifiers.length > 0 && (
@@ -108,21 +107,21 @@ export default function CheckoutPage() {
                 <div className="mt-2 flex gap-2">
                   <button
                     type="button"
-                    className="rounded border border-white/20 px-2 text-sm"
+                    className="h-8 w-8 rounded-full bg-fusion-mist font-bold"
                     onClick={() => cart.updateQty(item.key, item.quantity - 1)}
                   >
                     −
                   </button>
                   <button
                     type="button"
-                    className="rounded border border-white/20 px-2 text-sm"
+                    className="h-8 w-8 rounded-full bg-fusion-mist font-bold"
                     onClick={() => cart.updateQty(item.key, item.quantity + 1)}
                   >
                     +
                   </button>
                 </div>
               </div>
-              <div className="text-fusion-yellow">
+              <div className="font-semibold text-fusion-ink">
                 {formatMoney(item.unitPriceCents * item.quantity)}
               </div>
             </li>
@@ -130,45 +129,45 @@ export default function CheckoutPage() {
         </ul>
       </div>
 
-      <div className="rounded-2xl border border-fusion-gold/30 bg-fusion-charcoal/80 p-5 h-fit">
-        <h2 className="font-display text-2xl text-fusion-yellow">Contact & pay</h2>
+      <div className="h-fit rounded-[28px] bg-white p-6 shadow-float">
+        <h2 className="font-display text-2xl text-fusion-ink">Contact & pay</h2>
         <label className="mt-4 block text-sm">
-          <span className="text-fusion-muted">Name</span>
+          <span className="font-medium text-fusion-muted">Name</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-black/50 px-3 py-2"
+            className="mt-1 w-full rounded-2xl border border-fusion-line bg-fusion-mist/40 px-3 py-2.5 outline-none focus:border-fusion-green focus:bg-white"
             placeholder="Your name"
           />
         </label>
         <label className="mt-3 block text-sm">
-          <span className="text-fusion-muted">Mobile (for SMS updates & rewards)</span>
+          <span className="font-medium text-fusion-muted">Mobile (SMS + rewards)</span>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-black/50 px-3 py-2"
+            className="mt-1 w-full rounded-2xl border border-fusion-line bg-fusion-mist/40 px-3 py-2.5 outline-none focus:border-fusion-green focus:bg-white"
             placeholder="(555) 555-0100"
             required
           />
         </label>
         <label className="mt-3 block text-sm">
-          <span className="text-fusion-muted">Order notes</span>
+          <span className="font-medium text-fusion-muted">Order notes</span>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-black/50 px-3 py-2"
+            className="mt-1 w-full rounded-2xl border border-fusion-line bg-fusion-mist/40 px-3 py-2.5 outline-none focus:border-fusion-green focus:bg-white"
             rows={2}
           />
         </label>
         <label className="mt-3 block text-sm">
-          <span className="text-fusion-muted">Redeem reward points (100 pts = $5)</span>
+          <span className="font-medium text-fusion-muted">Redeem points (100 = $5)</span>
           <input
             type="number"
             min={0}
             step={100}
             value={redeem}
             onChange={(e) => setRedeem(Number(e.target.value) || 0)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-black/50 px-3 py-2"
+            className="mt-1 w-full rounded-2xl border border-fusion-line bg-fusion-mist/40 px-3 py-2.5 outline-none focus:border-fusion-green focus:bg-white"
           />
         </label>
 
@@ -187,9 +186,9 @@ export default function CheckoutPage() {
             <dt className="text-fusion-muted">Tax (est.)</dt>
             <dd>{formatMoney(taxEstimate)}</dd>
           </div>
-          <div className="flex justify-between border-t border-white/10 pt-2 text-lg font-bold">
+          <div className="flex justify-between border-t border-fusion-line pt-2 text-lg font-bold">
             <dt>Total</dt>
-            <dd className="text-fusion-yellow">{formatMoney(total)}</dd>
+            <dd className="text-fusion-ink">{formatMoney(total)}</dd>
           </div>
         </dl>
 
@@ -199,7 +198,7 @@ export default function CheckoutPage() {
           type="button"
           disabled={busy || !phone || cart.items.length === 0}
           onClick={pay}
-          className="mt-5 w-full rounded-lg bg-fusion-yellow py-3.5 font-bold text-fusion-black disabled:opacity-40"
+          className="mt-5 w-full rounded-full bg-fusion-green py-3.5 font-semibold text-white shadow-soft disabled:opacity-40"
         >
           {busy ? "Starting checkout…" : "Pay with Stripe"}
         </button>

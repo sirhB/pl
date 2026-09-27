@@ -4,73 +4,74 @@ import Image from "next/image";
 export default function HomePage() {
   return (
     <div>
-      <section className="relative min-h-[88vh] overflow-hidden">
-        <Image
-          src="/images/menu-flyer.jpg"
-          alt="Prime Fusion Jamaican fusion bowls"
-          fill
-          priority
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-palm-fade" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-black/30" />
-
-        <div className="relative mx-auto flex min-h-[88vh] max-w-6xl flex-col justify-end px-4 pb-16 pt-28 sm:justify-center sm:pb-24">
-          <div className="max-w-xl animate-fade-up">
-            <div className="mb-3 flex items-center gap-2 text-fusion-gold">
-              <span className="text-2xl">♛</span>
-              <span className="text-xs font-bold uppercase tracking-[0.28em]">
-                Food Truck & Catering
-              </span>
-            </div>
-            <h1 className="font-display text-5xl leading-[0.95] text-fusion-yellow sm:text-7xl">
-              PRIME
-              <br />
-              FUSION
-            </h1>
-            <p className="mt-4 max-w-md text-lg text-white/85">
-              Jamaican Fusion, Your Way. Scan. Build your bowl. Pay. We text you when it&apos;s
-              ready.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/order"
-                className="rounded-lg bg-fusion-yellow px-6 py-3.5 font-bold text-fusion-black transition hover:bg-white"
-              >
-                Start ordering
-              </Link>
-              <Link
-                href="/order?station=truck-window"
-                className="rounded-lg border border-white/30 bg-black/40 px-6 py-3.5 font-semibold text-white backdrop-blur transition hover:border-fusion-gold"
-              >
-                Truck window QR
-              </Link>
+      <section className="relative mx-auto max-w-6xl px-4 pb-16 pt-10">
+        <div className="relative overflow-hidden rounded-[32px] bg-fusion-ink text-white shadow-float">
+          <div className="absolute inset-0">
+            <Image
+              src="/images/menu-flyer.jpg"
+              alt="Prime Fusion Jamaican fusion bowls"
+              fill
+              priority
+              className="object-cover opacity-45"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-fusion-ink via-fusion-ink/85 to-fusion-ink/35" />
+          </div>
+          <div className="relative grid min-h-[78vh] items-end p-8 sm:p-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div className="max-w-xl animate-fade-up">
+              <div className="mb-3 flex items-center gap-2 text-fusion-yellow">
+                <span className="text-xl">♛</span>
+                <span className="text-xs font-bold uppercase tracking-[0.28em]">
+                  Food Truck & Catering
+                </span>
+              </div>
+              <h1 className="font-display text-5xl leading-[0.95] sm:text-6xl lg:text-7xl">
+                Prime
+                <span className="text-fusion-green"> Fusion</span>
+              </h1>
+              <p className="mt-4 max-w-md text-lg text-white/80">
+                Jamaican Fusion, Your Way. Build your bowl in a smooth flow — scan, customize,
+                pay, and we text you when it&apos;s ready.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  href="/order"
+                  className="rounded-full bg-fusion-green px-6 py-3.5 font-semibold text-white shadow-soft transition hover:bg-fusion-green-dark"
+                >
+                  Build a bowl
+                </Link>
+                <Link
+                  href="/order?station=truck-window"
+                  className="rounded-full bg-white/10 px-6 py-3.5 font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                >
+                  Truck window QR
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-8 px-4 py-16 sm:grid-cols-3">
+      <section className="mx-auto grid max-w-6xl gap-5 px-4 pb-20 sm:grid-cols-3">
         {[
           {
-            title: "Scan & order",
-            body: "QR codes at the truck and picnic tables open dine-in or to-go instantly.",
+            title: "Smooth builder",
+            body: "Size, proteins, and sides with live price — the same flow guests expect from modern ordering apps.",
           },
           {
-            title: "Build your bowl",
-            body: "1 or 2 proteins, your sides — fusion priced at $15 / $25, plus the full menu.",
+            title: "Full menu, your way",
+            body: "Signature bowls, rasta pasta, wings, and empanadas are all customizable before they hit the cart.",
           },
           {
             title: "Pay & get texts",
-            body: "Stripe checkout, kitchen board, SMS ready alerts, and loyalty points.",
+            body: "Stripe checkout, kitchen board, SMS ready alerts, and loyalty points on every order.",
           },
         ].map((f, i) => (
           <div
             key={f.title}
-            className="animate-fade-up"
-            style={{ animationDelay: `${0.1 * (i + 1)}s` }}
+            className="rounded-[24px] bg-white p-6 shadow-card animate-fade-up"
+            style={{ animationDelay: `${0.08 * (i + 1)}s` }}
           >
-            <h2 className="font-display text-2xl text-fusion-yellow">{f.title}</h2>
+            <h2 className="font-display text-2xl text-fusion-ink">{f.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-fusion-muted">{f.body}</p>
           </div>
         ))}

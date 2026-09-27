@@ -320,34 +320,100 @@ export async function seedDatabase(force = false) {
     );
   }
 
-  item(pasta.id, {
-    name: "Jerk Chicken Rasta Pasta",
-    slug: "jerk-chicken-rasta-pasta",
-    priceCents: 1600,
-    costCents: 560,
-    sortOrder: 1,
-  });
-  item(pasta.id, {
-    name: "Shrimp Rasta Pasta",
-    slug: "shrimp-rasta-pasta",
-    priceCents: 1800,
-    costCents: 700,
-    sortOrder: 2,
-  });
-  item(pasta.id, {
-    name: "Salmon Rasta Pasta",
-    slug: "salmon-rasta-pasta",
-    priceCents: 1900,
-    costCents: 760,
-    sortOrder: 3,
-  });
-  item(pasta.id, {
-    name: "Chicken & Shrimp Rasta Pasta",
-    slug: "chicken-shrimp-rasta-pasta",
-    priceCents: 2000,
-    costCents: 820,
-    sortOrder: 4,
-  });
+  // Signature bowl customizations (make menu items customizable)
+  const bowlExtras = {
+    id: cuid(),
+    name: "Extras & swaps",
+    minSelect: 0,
+    maxSelect: 4,
+    isRequired: false,
+  };
+  db.modifierGroups.push(bowlExtras);
+  for (const opt of [
+    { name: "Add Mac & Cheese", delta: 200, cost: 160 },
+    { name: "Swap to Fried Rice", delta: 0, cost: 100 },
+    { name: "Extra Plantains", delta: 150, cost: 90 },
+    { name: "No Coleslaw", delta: 0, cost: 0 },
+    { name: "No Plantains", delta: 0, cost: 0 },
+    { name: "Extra Jerk Sauce", delta: 50, cost: 20 },
+  ]) {
+    db.modifierOptions.push({
+      id: cuid(),
+      groupId: bowlExtras.id,
+      name: opt.name,
+      priceDeltaCents: opt.delta,
+      costDeltaCents: opt.cost,
+      isDefault: false,
+      isActive: true,
+      inventoryItemId: null,
+    });
+  }
+  for (const b of bowlItems) {
+    db.menuItemModifiers.push({ menuItemId: b.id, groupId: bowlExtras.id });
+  }
+
+  const heatGroup = {
+    id: cuid(),
+    name: "Heat level",
+    minSelect: 1,
+    maxSelect: 1,
+    isRequired: true,
+  };
+  db.modifierGroups.push(heatGroup);
+  for (const [name, isDefault] of [
+    ["Mild", false],
+    ["Regular", true],
+    ["Extra Jerk Hot", false],
+  ] as const) {
+    db.modifierOptions.push({
+      id: cuid(),
+      groupId: heatGroup.id,
+      name,
+      priceDeltaCents: name === "Extra Jerk Hot" ? 50 : 0,
+      costDeltaCents: 0,
+      isDefault,
+      isActive: true,
+      inventoryItemId: null,
+    });
+  }
+
+  const pastaItems = [
+    item(pasta.id, {
+      name: "Jerk Chicken Rasta Pasta",
+      slug: "jerk-chicken-rasta-pasta",
+      description: "Creamy rasta pasta with jerk chicken.",
+      priceCents: 1600,
+      costCents: 560,
+      sortOrder: 1,
+    }),
+    item(pasta.id, {
+      name: "Shrimp Rasta Pasta",
+      slug: "shrimp-rasta-pasta",
+      description: "Creamy rasta pasta with shrimp.",
+      priceCents: 1800,
+      costCents: 700,
+      sortOrder: 2,
+    }),
+    item(pasta.id, {
+      name: "Salmon Rasta Pasta",
+      slug: "salmon-rasta-pasta",
+      description: "Creamy rasta pasta with salmon.",
+      priceCents: 1900,
+      costCents: 760,
+      sortOrder: 3,
+    }),
+    item(pasta.id, {
+      name: "Chicken & Shrimp Rasta Pasta",
+      slug: "chicken-shrimp-rasta-pasta",
+      description: "Creamy rasta pasta with chicken and shrimp.",
+      priceCents: 2000,
+      costCents: 820,
+      sortOrder: 4,
+    }),
+  ];
+  for (const p of pastaItems) {
+    db.menuItemModifiers.push({ menuItemId: p.id, groupId: heatGroup.id });
+  }
 
   const wingFlavor = {
     id: cuid(),
@@ -407,45 +473,75 @@ export async function seedDatabase(force = false) {
     db.menuItemModifiers.push({ menuItemId: w.id, groupId: wingFlavor.id });
   }
 
-  item(empanadas.id, {
+  const empFlavor = {
+    id: cuid(),
+    name: "Empanada mix",
+    minSelect: 1,
+    maxSelect: 2,
+    isRequired: true,
+  };
+  db.modifierGroups.push(empFlavor);
+  for (const name of ["Chicken", "Beef", "Half & Half"]) {
+    db.modifierOptions.push({
+      id: cuid(),
+      groupId: empFlavor.id,
+      name,
+      priceDeltaCents: 0,
+      costDeltaCents: 0,
+      isDefault: name === "Chicken",
+      isActive: true,
+      inventoryItemId: null,
+    });
+  }
+
+  const chickenEmpItem = item(empanadas.id, {
     name: "Chicken Empanada",
     slug: "chicken-empanada",
     priceCents: 400,
     costCents: 140,
     sortOrder: 1,
   });
-  item(empanadas.id, {
+  const beefEmpItem = item(empanadas.id, {
     name: "Beef Empanada",
     slug: "beef-empanada",
     priceCents: 400,
     costCents: 150,
     sortOrder: 2,
   });
-  item(empanadas.id, {
-    name: "Empanada Bundle — 2 for $7",
-    slug: "empanada-bundle-2",
-    description: "Mix & match any 2 empanadas.",
-    priceCents: 700,
-    costCents: 280,
-    sortOrder: 3,
-    tags: ["bundle"],
-  });
-  item(empanadas.id, {
-    name: "Empanada Bundle — 3 for $10",
-    slug: "empanada-bundle-3",
-    priceCents: 1000,
-    costCents: 420,
-    sortOrder: 4,
-    tags: ["bundle"],
-  });
-  item(empanadas.id, {
-    name: "Empanada Bundle — 6 for $18",
-    slug: "empanada-bundle-6",
-    priceCents: 1800,
-    costCents: 780,
-    sortOrder: 5,
-    tags: ["bundle"],
-  });
+  const empBundles = [
+    item(empanadas.id, {
+      name: "Empanada Bundle — 2 for $7",
+      slug: "empanada-bundle-2",
+      description: "Mix & match any 2 empanadas.",
+      priceCents: 700,
+      costCents: 280,
+      sortOrder: 3,
+      tags: ["bundle"],
+    }),
+    item(empanadas.id, {
+      name: "Empanada Bundle — 3 for $10",
+      slug: "empanada-bundle-3",
+      description: "Mix & match any 3 empanadas.",
+      priceCents: 1000,
+      costCents: 420,
+      sortOrder: 4,
+      tags: ["bundle"],
+    }),
+    item(empanadas.id, {
+      name: "Empanada Bundle — 6 for $18",
+      slug: "empanada-bundle-6",
+      description: "Mix & match any 6 empanadas.",
+      priceCents: 1800,
+      costCents: 780,
+      sortOrder: 5,
+      tags: ["bundle"],
+    }),
+  ];
+  for (const b of empBundles) {
+    db.menuItemModifiers.push({ menuItemId: b.id, groupId: empFlavor.id });
+  }
+  void chickenEmpItem;
+  void beefEmpItem;
 
   item(sides.id, {
     name: "Rice & Peas",

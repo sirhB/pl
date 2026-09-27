@@ -51,29 +51,26 @@ export default function OrderPageClient() {
   const two = byo?.items.find((i) => i.slug === "fusion-bowl-2-protein");
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 pb-28">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-fusion-gold">
-            Interactive ordering
+    <div className="mx-auto max-w-6xl px-4 py-8 pb-32">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        {stationLabel ? (
+          <p className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-fusion-ink shadow-card">
+            <span className="h-2 w-2 rounded-full bg-fusion-green" />
+            {stationLabel} · {cart.orderType === "DINE_IN" ? "Dine in" : "To-go"}
           </p>
-          <h1 className="font-display text-4xl text-white sm:text-5xl">Place your order</h1>
-          {stationLabel && (
-            <p className="mt-2 inline-flex rounded-full border border-fusion-green/40 bg-fusion-green/15 px-3 py-1 text-sm text-white">
-              QR station · {stationLabel} · {cart.orderType === "DINE_IN" ? "Dine in" : "To-go"}
-            </p>
-          )}
-        </div>
-        <div className="flex rounded-lg border border-white/10 bg-black/40 p-1">
+        ) : (
+          <p className="text-sm text-fusion-muted">Order for pickup at the truck</p>
+        )}
+        <div className="flex rounded-full bg-white p-1 shadow-card">
           {(["TOGO", "DINE_IN"] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => cart.setOrderType(t)}
-              className={`rounded-md px-4 py-2 text-sm font-semibold ${
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 cart.orderType === t
-                  ? "bg-fusion-yellow text-fusion-black"
-                  : "text-fusion-muted hover:text-white"
+                  ? "bg-fusion-ink text-white"
+                  : "text-fusion-muted hover:text-fusion-ink"
               }`}
             >
               {t === "TOGO" ? "To-go" : "Dine in"}
@@ -83,12 +80,14 @@ export default function OrderPageClient() {
       </div>
 
       {loading && (
-        <p className="animate-pulse-soft text-fusion-muted">Loading the fusion menu…</p>
+        <p className="rounded-[24px] bg-white p-10 text-fusion-muted shadow-card">
+          Loading your fusion menu…
+        </p>
       )}
       {error && <p className="text-fusion-red">{error}</p>}
 
       {!loading && !error && one && two && (
-        <div className="space-y-12">
+        <div className="space-y-10">
           <BowlBuilder oneProtein={one} twoProtein={two} />
           <MenuBrowser categories={menu} />
         </div>

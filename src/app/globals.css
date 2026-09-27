@@ -1,13 +1,13 @@
-@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Outfit:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-display: "Archivo Black", Impact, sans-serif;
-  --font-body: "Manrope", system-ui, sans-serif;
-  color-scheme: dark;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Outfit", system-ui, sans-serif;
+  color-scheme: light;
 }
 
 html,
@@ -16,17 +16,17 @@ body {
 }
 
 body {
-  @apply bg-fusion-black font-sans text-fusion-cream antialiased;
+  @apply bg-fusion-mist font-sans text-fusion-ink antialiased;
   background-image:
-    radial-gradient(ellipse at top left, rgba(212, 160, 23, 0.14), transparent 42%),
-    radial-gradient(ellipse at bottom right, rgba(31, 138, 59, 0.1), transparent 40%),
-    linear-gradient(180deg, #0a0a0a 0%, #101010 100%);
+    radial-gradient(ellipse at top right, rgba(31, 170, 74, 0.08), transparent 42%),
+    radial-gradient(ellipse at bottom left, rgba(201, 162, 39, 0.07), transparent 40%),
+    linear-gradient(180deg, #f3f4f6 0%, #eef0f3 100%);
   background-attachment: fixed;
 }
 
 ::selection {
-  background: #f5c518;
-  color: #0a0a0a;
+  background: #1faa4a;
+  color: #fff;
 }
 
 input,
@@ -34,4 +34,18 @@ textarea,
 select,
 button {
   font: inherit;
+}
+
+/* Smooth toggle switch */
+.toggle-track {
+  @apply relative h-7 w-12 shrink-0 rounded-full bg-fusion-line transition;
+}
+.toggle-track[data-on="true"] {
+  @apply bg-fusion-green;
+}
+.toggle-thumb {
+  @apply absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition;
+}
+.toggle-track[data-on="true"] .toggle-thumb {
+  transform: translateX(1.25rem);
 }
