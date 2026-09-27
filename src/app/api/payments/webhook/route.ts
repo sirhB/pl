@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { markOrderPaid } from "@/lib/orders";
-import { prisma } from "@/lib/db";
+import { getDb, withDb } from "@/lib/db";
 import Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
@@ -31,16 +31,18 @@ export async function POST(req: Request) {
     const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;
     if (orderId) {
-      const existing = await prisma.order.findUnique({ where: { id: orderId } });
-      if (existing && existing.status === "PENDING_PAYMENT") {
-        await markOrderPaid(orderId, {
-          sessionId: session.id,
-          paymentIntentId:
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : session.payment_intent?.id,
-        });
-      }
+      await withDb(async () => {
+        const existing = getDb().orders.find((o) => o.id === orderId);
+        if (existing && existing.status === "PENDING_PAYMENT") {
+          await markOrderPaid(orderId, {
+            sessionId: session.id,
+            paymentIntentId:
+              typeof session.payment_intent === "string"
+                ? session.payment_intent
+                : session.payment_intent?.id,
+          });
+        }
+      });
     }
   }
 

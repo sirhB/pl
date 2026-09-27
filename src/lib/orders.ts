@@ -1,19 +1,10 @@
-import { prisma } from "./db";
-import type { Prisma } from "@prisma/client";
+import { getDb, saveDb, cuid, nowIso } from "./db";
+import type { Order, OrderItem, OrderStatus, OrderType } from "./store/types";
 import { earnPointsForOrder } from "./rewards";
 import { orderStatusMessage, sendSms } from "./sms";
 import { formatMoney } from "./utils";
 
-export type OrderType = "DINE_IN" | "TOGO";
-export type OrderStatus =
-  | "PENDING_PAYMENT"
-  | "PAID"
-  | "RECEIVED"
-  | "PREPARING"
-  | "READY"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "REFUNDED";
+export type { OrderStatus, OrderType };
 
 export type CartLineInput = {
   menuItemId: string;
@@ -24,7 +15,10 @@ export type CartLineInput = {
 };
 
 export async function getTaxRateBps() {
-  const tax = await prisma.taxSetting.findFirst({ orderBy: { createdAt: "desc" } });
+  const db = getDb();
+  const tax = [...db.taxSettings].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt)
+  )[0];
   return tax?.rateBps ?? 750;
 }
 
@@ -33,37 +27,19 @@ export function calcTax(subtotalCents: number, taxRateBps: number) {
 }
 
 export async function nextOrderNumber() {
-  const n = await prisma.order.count();
+  const db = getDb();
+  const n = db.orders.length;
   const stamp = new Date().toISOString().slice(2, 10).replace(/-/g, "");
   return `PF-${stamp}-${String(n + 1).padStart(4, "0")}`;
 }
 
-export async function buildOrderTotals(
-  lines: CartLineInput[],
-  discountCents = 0
-) {
-  const ids = lines.map((l) => l.menuItemId);
-  const items = await prisma.menuItem.findMany({
-    where: { id: { in: ids }, isActive: true },
-    include: {
-      modifiers: { include: { group: { include: { options: true } } } },
-      recipes: true,
-    },
-  });
-  const byId = Object.fromEntries(items.map((i) => [i.id, i]));
+export async function buildOrderTotals(lines: CartLineInput[], discountCents = 0) {
+  const db = getDb();
+  const byId = Object.fromEntries(db.menuItems.filter((i) => i.isActive).map((i) => [i.id, i]));
 
   let subtotal = 0;
   let cost = 0;
-  const orderItems: Array<{
-    menuItemId: string;
-    name: string;
-    quantity: number;
-    unitPriceCents: number;
-    totalCents: number;
-    costCents: number;
-    modifiersJson: string;
-    notes?: string;
-  }> = [];
+  const orderItems: Array<Omit<OrderItem, "id" | "orderId">> = [];
 
   for (const line of lines) {
     const item = byId[line.menuItemId];
@@ -76,10 +52,10 @@ export async function buildOrderTotals(
     const total = unit * line.quantity;
     const lineCost =
       (item.costCents +
-        (line.modifiers || []).reduce((s, m) => {
-          // cost already on item; modifier cost approx via price delta * 0.4 if unknown
-          return s + Math.round((m.priceDeltaCents || 0) * 0.4);
-        }, 0)) *
+        (line.modifiers || []).reduce(
+          (s, m) => s + Math.round((m.priceDeltaCents || 0) * 0.4),
+          0
+        )) *
       line.quantity;
     subtotal += total;
     cost += lineCost;
@@ -119,96 +95,120 @@ export async function createPendingOrder(opts: {
   discountCents?: number;
   rewardPointsRedeemed?: number;
 }) {
+  const db = getDb();
   const totals = await buildOrderTotals(opts.lines, opts.discountCents || 0);
   const orderNumber = await nextOrderNumber();
-  const prepMins = 12;
+  const stamp = nowIso();
+  const orderId = cuid();
 
-  const order = await prisma.order.create({
-    data: {
-      orderNumber,
-      customerId: opts.customerId,
-      customerName: opts.customerName,
-      customerPhone: opts.customerPhone,
-      orderType: opts.orderType,
-      status: "PENDING_PAYMENT",
-      qrStationId: opts.qrStationId,
-      subtotalCents: totals.subtotal,
-      taxCents: totals.taxCents,
-      discountCents: totals.discountCents,
-      totalCents: totals.totalCents,
-      taxRateBps: totals.taxRateBps,
-      rewardPointsRedeemed: opts.rewardPointsRedeemed || 0,
-      notes: opts.notes,
-      estimatedReadyAt: new Date(Date.now() + prepMins * 60_000),
-      items: { create: totals.orderItems },
-      events: { create: { status: "PENDING_PAYMENT", note: "Order created" } },
-    },
-    include: { items: true },
+  const order: Order = {
+    id: orderId,
+    orderNumber,
+    customerId: opts.customerId || null,
+    customerName: opts.customerName || null,
+    customerPhone: opts.customerPhone || null,
+    orderType: opts.orderType,
+    status: "PENDING_PAYMENT",
+    qrStationId: opts.qrStationId || null,
+    subtotalCents: totals.subtotal,
+    taxCents: totals.taxCents,
+    discountCents: totals.discountCents,
+    tipCents: 0,
+    totalCents: totals.totalCents,
+    taxRateBps: totals.taxRateBps,
+    rewardPointsEarned: 0,
+    rewardPointsRedeemed: opts.rewardPointsRedeemed || 0,
+    stripeSessionId: null,
+    stripePaymentIntentId: null,
+    notes: opts.notes || null,
+    estimatedReadyAt: new Date(Date.now() + 12 * 60_000).toISOString(),
+    paidAt: null,
+    readyAt: null,
+    completedAt: null,
+    createdAt: stamp,
+    updatedAt: stamp,
+  };
+
+  db.orders.push(order);
+  for (const line of totals.orderItems) {
+    db.orderItems.push({ id: cuid(), orderId, ...line });
+  }
+  db.orderEvents.push({
+    id: cuid(),
+    orderId,
+    status: "PENDING_PAYMENT",
+    note: "Order created",
+    createdAt: stamp,
   });
+  saveDb(true);
 
-  return order;
+  return {
+    ...order,
+    items: db.orderItems.filter((i) => i.orderId === orderId),
+  };
 }
 
-async function deductInventoryForOrder(orderId: string) {
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: {
-      items: {
-        include: {
-          menuItem: { include: { recipes: true } },
-        },
-      },
-    },
-  });
+function deductInventoryForOrder(orderId: string) {
+  const db = getDb();
+  const order = db.orders.find((o) => o.id === orderId);
   if (!order) return;
+  const lines = db.orderItems.filter((i) => i.orderId === orderId);
 
-  for (const line of order.items) {
-    const recipes = line.menuItem?.recipes || [];
+  for (const line of lines) {
+    if (!line.menuItemId) continue;
+    const recipes = db.recipeComponents.filter((r) => r.menuItemId === line.menuItemId);
     for (const recipe of recipes) {
+      const inv = db.inventoryItems.find((i) => i.id === recipe.inventoryItemId);
+      if (!inv) continue;
       const delta = -(recipe.quantityUsed * line.quantity);
-      await prisma.$transaction([
-        prisma.inventoryItem.update({
-          where: { id: recipe.inventoryItemId },
-          data: { quantityOnHand: { increment: delta } },
-        }),
-        prisma.inventoryMovement.create({
-          data: {
-            inventoryItemId: recipe.inventoryItemId,
-            delta,
-            reason: `Order ${order.orderNumber}`,
-            orderId: order.id,
-          },
-        }),
-      ]);
+      inv.quantityOnHand += delta;
+      db.inventoryMovements.push({
+        id: cuid(),
+        inventoryItemId: inv.id,
+        delta,
+        reason: `Order ${order.orderNumber}`,
+        orderId: order.id,
+        createdAt: nowIso(),
+      });
     }
   }
+  saveDb(true);
 }
 
-export async function markOrderPaid(orderId: string, stripeMeta?: {
-  sessionId?: string;
-  paymentIntentId?: string;
-}) {
-  const order = await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      status: "PAID",
-      paidAt: new Date(),
-      stripeSessionId: stripeMeta?.sessionId,
-      stripePaymentIntentId: stripeMeta?.paymentIntentId,
-      events: { create: { status: "PAID", note: "Payment confirmed" } },
-    },
+export async function markOrderPaid(
+  orderId: string,
+  stripeMeta?: { sessionId?: string; paymentIntentId?: string }
+) {
+  const db = getDb();
+  const order = db.orders.find((o) => o.id === orderId);
+  if (!order) throw new Error("Order not found");
+
+  const stamp = nowIso();
+  order.status = "PAID";
+  order.paidAt = stamp;
+  order.updatedAt = stamp;
+  if (stripeMeta?.sessionId) order.stripeSessionId = stripeMeta.sessionId;
+  if (stripeMeta?.paymentIntentId) order.stripePaymentIntentId = stripeMeta.paymentIntentId;
+  db.orderEvents.push({
+    id: cuid(),
+    orderId,
+    status: "PAID",
+    note: "Payment confirmed",
+    createdAt: stamp,
   });
 
-  // Advance to kitchen queue
-  await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      status: "RECEIVED",
-      events: { create: { status: "RECEIVED", note: "Sent to kitchen" } },
-    },
+  order.status = "RECEIVED";
+  order.updatedAt = nowIso();
+  db.orderEvents.push({
+    id: cuid(),
+    orderId,
+    status: "RECEIVED",
+    note: "Sent to kitchen",
+    createdAt: nowIso(),
   });
+  saveDb(true);
 
-  await deductInventoryForOrder(orderId);
+  deductInventoryForOrder(orderId);
 
   let points = 0;
   if (order.customerPhone) {
@@ -218,10 +218,8 @@ export async function markOrderPaid(orderId: string, stripeMeta?: {
       order.subtotalCents,
       order.customerName || undefined
     );
-    await prisma.order.update({
-      where: { id: orderId },
-      data: { rewardPointsEarned: points },
-    });
+    order.rewardPointsEarned = points;
+    saveDb(true);
     await sendSms({
       to: order.customerPhone,
       body: orderStatusMessage(order.orderNumber, "RECEIVED"),
@@ -230,10 +228,10 @@ export async function markOrderPaid(orderId: string, stripeMeta?: {
     });
   }
 
-  return prisma.order.findUnique({
-    where: { id: orderId },
-    include: { items: true },
-  });
+  return {
+    ...order,
+    items: getDb().orderItems.filter((i) => i.orderId === orderId),
+  };
 }
 
 export async function updateOrderStatus(
@@ -241,19 +239,27 @@ export async function updateOrderStatus(
   status: OrderStatus,
   note?: string
 ) {
-  const data: Prisma.OrderUpdateInput = {
+  const db = getDb();
+  const order = db.orders.find((o) => o.id === orderId);
+  if (!order) throw new Error("Order not found");
+
+  order.status = status;
+  order.updatedAt = nowIso();
+  if (status === "READY") order.readyAt = nowIso();
+  if (status === "COMPLETED") order.completedAt = nowIso();
+  db.orderEvents.push({
+    id: cuid(),
+    orderId,
     status,
-    events: { create: { status, note } },
-  };
-  if (status === "READY") data.readyAt = new Date();
-  if (status === "COMPLETED") data.completedAt = new Date();
-
-  const order = await prisma.order.update({
-    where: { id: orderId },
-    data,
+    note: note || null,
+    createdAt: nowIso(),
   });
+  saveDb(true);
 
-  if (order.customerPhone && ["PREPARING", "READY", "COMPLETED", "CANCELLED"].includes(status)) {
+  if (
+    order.customerPhone &&
+    ["PREPARING", "READY", "COMPLETED", "CANCELLED"].includes(status)
+  ) {
     await sendSms({
       to: order.customerPhone,
       body: orderStatusMessage(
@@ -267,4 +273,20 @@ export async function updateOrderStatus(
   }
 
   return order;
+}
+
+export function getOrderById(id: string) {
+  const db = getDb();
+  const order = db.orders.find((o) => o.id === id);
+  if (!order) return null;
+  return {
+    ...order,
+    items: db.orderItems.filter((i) => i.orderId === id),
+    events: db.orderEvents
+      .filter((e) => e.orderId === id)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    qrStation: order.qrStationId
+      ? db.qrStations.find((s) => s.id === order.qrStationId) || null
+      : null,
+  };
 }

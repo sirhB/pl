@@ -1,7 +1,9 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
-import { prisma } from "./db";
+import { getDb } from "./db";
+import type { UserRole } from "./store/types";
+
 const COOKIE = "pf_session";
 
 function secret() {
@@ -10,7 +12,7 @@ function secret() {
   );
 }
 
-export type UserRole = "ADMIN" | "STAFF" | "CUSTOMER";
+export type { UserRole };
 
 export type SessionUser = {
   id: string;
@@ -85,7 +87,7 @@ export async function requireAdmin() {
 }
 
 export async function authenticate(email: string, password: string) {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = getDb().users.find((u) => u.email === email);
   if (!user?.passwordHash) return null;
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) return null;

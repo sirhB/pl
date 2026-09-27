@@ -1,4 +1,4 @@
-import { prisma } from "./db";
+import { getDb, saveDb, cuid, nowIso } from "./db";
 import { normalizePhone } from "./utils";
 
 export async function sendSms(opts: {
@@ -30,16 +30,19 @@ export async function sendSms(opts: {
     console.log(`[SMS DEV] to=${to} body=${opts.body}`);
   }
 
-  return prisma.smsLog.create({
-    data: {
-      toPhone: to,
-      body: opts.body,
-      status,
-      providerId,
-      orderId: opts.orderId,
-      userId: opts.userId,
-    },
-  });
+  const row = {
+    id: cuid(),
+    toPhone: to,
+    body: opts.body,
+    status,
+    providerId: providerId || null,
+    orderId: opts.orderId || null,
+    userId: opts.userId || null,
+    createdAt: nowIso(),
+  };
+  getDb().smsLogs.push(row);
+  saveDb(true);
+  return row;
 }
 
 export function orderStatusMessage(

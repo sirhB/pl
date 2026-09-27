@@ -2,6 +2,8 @@
 
 QR-enabled ordering platform for the **Prime Fusion** Jamaican fusion food truck.
 
+> **Note:** Data is stored in a local JSON file (`data/store.json`) for now. Prisma / a real database will be added when we go live.
+
 ## Features
 
 - Public interactive ordering (dine-in / to-go) via QR stations
@@ -38,3 +40,9 @@ Open http://localhost:3000
 ## Environment
 
 Copy `.env.example` to `.env`. Set real `STRIPE_*` and `TWILIO_*` values for production payments and SMS.
+
+## Data
+
+- `npm run db:setup` — reset/seed `data/store.json`
+- `npm run db:seed` — seed only if empty
+- Auto-seeds on first API request if the store is empty
