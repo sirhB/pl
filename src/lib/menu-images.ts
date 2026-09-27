@@ -1,7 +1,8 @@
 /** Local menu photography paths under /public/images/menu */
 
 export const menuImages = {
-  hero: "/images/menu/hero-truck-spread.png",
+  hero: "/images/menu/hero-cta.png",
+  heroFallback: "/images/menu/hero-truck-spread.png",
   fusionBowl: "/images/menu/fusion-bowl-hero.png",
   jerkChicken: "/images/menu/protein-jerk-chicken.png",
   barbecueChicken: "/images/menu/protein-barbecue-chicken.png",

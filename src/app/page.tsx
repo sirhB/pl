@@ -7,16 +7,17 @@ export default function HomePage() {
   return (
     <div>
       <section className="relative mx-auto max-w-7xl px-4 pb-16 pt-8">
-        <div className="relative min-h-[82vh] overflow-hidden rounded-[32px] border border-fusion-line/30 shadow-glass">
+        <div className="relative min-h-[88vh] overflow-hidden rounded-[32px] border border-fusion-line/30 shadow-glass">
           <Image
             src={menuImages.hero}
-            alt="Prime Fusion Jamaican fusion bowls"
+            alt="Prime Fusion Jamaican fusion bowl"
             fill
             priority
-            className="object-cover"
+            className="object-cover object-center scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-fusion-void via-fusion-void/85 to-fusion-void/30" />
-          <div className="relative flex min-h-[82vh] flex-col justify-end p-8 sm:justify-center sm:p-12">
+          <div className="absolute inset-0 bg-gradient-to-r from-fusion-void via-fusion-void/80 to-fusion-void/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-fusion-void/70 via-transparent to-black/25" />
+          <div className="relative flex min-h-[88vh] flex-col justify-end p-8 sm:justify-center sm:p-12 lg:p-16">
             <div className="max-w-xl animate-fade-up">
               <div className="mb-3 flex items-center gap-2 text-fusion-gold">
                 <span className="text-2xl">♛</span>
@@ -29,57 +30,28 @@ export default function HomePage() {
                 <br />
                 <span className="text-fusion-gold">Fusion</span>
               </h1>
-              <p className="mt-3 font-brush text-xl text-fusion-amber">
+              <p className="mt-3 font-brush text-xl text-fusion-amber sm:text-2xl">
                 {copy.brandTag}
               </p>
-              <p className="mt-4 max-w-md text-base text-white/75">
+              <p className="mt-4 max-w-md text-base text-white/80 sm:text-lg">
                 {copy.homeSupport}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href="/order"
-                  className="rounded-full bg-fusion-green px-6 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-glow transition hover:bg-fusion-emerald"
+                  className="rounded-full bg-fusion-green px-7 py-4 text-sm font-bold uppercase tracking-wide text-white shadow-glow transition hover:bg-fusion-emerald"
                 >
                   {copy.homeCta}
                 </Link>
                 <Link
                   href="/order?station=truck-window"
-                  className="rounded-full border border-fusion-line bg-white/5 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:border-fusion-gold"
+                  className="rounded-full border border-white/25 bg-black/30 px-7 py-4 text-sm font-semibold text-white backdrop-blur transition hover:border-fusion-gold"
                 >
                   {copy.homeQr}
                 </Link>
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="mt-8 grid gap-3 sm:grid-cols-3">
-          {[
-            { src: menuImages.jerkChicken, label: "Jerk Chicken" },
-            { src: menuImages.oxtails, label: "Oxtails" },
-            { src: menuImages.wings, label: "Wings" },
-            { src: menuImages.rastaPasta, label: "Rasta Pasta" },
-            { src: menuImages.empanadas, label: "Empanadas" },
-            { src: menuImages.fruitPunch, label: "Fruit Punch" },
-          ].map((tile) => (
-            <Link
-              key={tile.label}
-              href="/order"
-              className="group relative aspect-[4/3] overflow-hidden rounded-[22px] border border-fusion-line/30"
-            >
-              <Image
-                src={tile.src}
-                alt={tile.label}
-                fill
-                className="object-cover transition duration-500 group-hover:scale-105"
-                sizes="(max-width: 640px) 100vw, 33vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <span className="absolute bottom-3 left-3 font-display text-sm font-bold uppercase tracking-wide text-white">
-                {tile.label}
-              </span>
-            </Link>
-          ))}
         </div>
       </section>
     </div>

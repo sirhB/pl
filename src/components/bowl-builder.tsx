@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { formatMoney } from "@/lib/utils";
 import { useCart } from "@/contexts/cart-context";
+import { BowlPreview } from "@/components/bowl-preview";
 import { copy } from "@/lib/copy";
 import { menuImages, optionImages, proteinImages } from "@/lib/menu-images";
 import type { MenuCategory, MenuItemDTO } from "@/lib/menu";
@@ -322,12 +323,6 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
     onAdded?.();
   }
 
-  const badges = [
-    ...proteins.map((p) => ({ label: displayProteinName(p), tone: "gold" as const })),
-    { label: base, tone: "green" as const },
-    ...sides.filter((s) => s !== base).map((s) => ({ label: s, tone: "green" as const })),
-  ];
-
   const togglePanel = (
     <div className="space-y-6">
       <section>
@@ -616,63 +611,13 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
         {/* CENTER */}
         <div className="order-1 xl:order-2">
           <div className="glass-panel relative overflow-hidden rounded-[28px] shadow-glass">
-            <div className="bowl-canvas relative flex min-h-[360px] items-center justify-center p-6 sm:min-h-[460px]">
-              <div
-                key={bowlKey}
-                className="relative h-56 w-56 animate-bowl-pop sm:h-72 sm:w-72"
-              >
-                <div className="absolute inset-0 rounded-full border border-fusion-amber/30 bg-gradient-to-b from-zinc-800 to-black shadow-[inset_0_0_60px_rgba(0,0,0,0.65)]" />
-                <div className="absolute inset-6 overflow-hidden rounded-full border border-white/10">
-                  <Image
-                    src={
-                      (proteins[0] &&
-                        (proteinImages[proteins[0]] ||
-                          proteinImages[displayProteinName(proteins[0])])) ||
-                      menuImages.fusionBowl
-                    }
-                    alt="Fusion bowl preview"
-                    fill
-                    className="object-cover object-center opacity-90"
-                    sizes="288px"
-                    priority
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="rounded-full bg-black/55 px-4 py-2 text-center backdrop-blur-sm">
-                    <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-fusion-gold">
-                      {tier === 1 ? copy.oneProteinBowl : copy.twoProteinBowl}
-                    </p>
-                    <p className="text-xs font-semibold text-white">
-                      {proteins.map(displayProteinName).join(" + ") || copy.pickProtein}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pointer-events-none absolute inset-0">
-                {badges.slice(0, 5).map((b, i) => {
-                  const positions = [
-                    "left-[6%] top-[18%]",
-                    "right-[5%] top-[22%]",
-                    "left-[8%] bottom-[22%]",
-                    "right-[6%] bottom-[18%]",
-                    "left-1/2 top-[8%] -translate-x-1/2",
-                  ];
-                  return (
-                    <span
-                      key={`${b.label}-${i}-${bowlKey}`}
-                      className={`absolute ${positions[i]} animate-badge-in rounded-full border border-fusion-line bg-black/60 px-3 py-1.5 text-[11px] font-semibold backdrop-blur-md ${
-                        b.tone === "gold" ? "text-fusion-gold" : "text-fusion-emerald"
-                      }`}
-                      style={{ animationDelay: `${i * 0.05}s` }}
-                    >
-                      {b.label}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
+            <BowlPreview
+              bowlKey={bowlKey}
+              tier={tier}
+              base={base}
+              proteins={proteins}
+              sides={sides}
+            />
           </div>
         </div>
 

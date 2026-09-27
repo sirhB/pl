@@ -59,6 +59,15 @@ module.exports = {
           "0%": { backgroundPosition: "200% 0" },
           "100%": { backgroundPosition: "-200% 0" },
         },
+        "ingredient-drop": {
+          "0%": { opacity: "0", transform: "translateY(-28px) scale(0.72)" },
+          "65%": { opacity: "1", transform: "translateY(4px) scale(1.04)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        "layer-crossfade": {
+          "0%": { opacity: "0", transform: "scale(1.06)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.5s ease-out both",
@@ -67,6 +76,8 @@ module.exports = {
         press: "press 0.28s ease-out",
         "price-flash": "price-flash 0.45s ease-out",
         shimmer: "shimmer 2.8s linear infinite",
+        "ingredient-drop": "ingredient-drop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "layer-crossfade": "layer-crossfade 0.4s ease-out both",
       },
     },
   },
