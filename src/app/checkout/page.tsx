@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/cart-context";
 import { formatMoney } from "@/lib/utils";
+import { copy } from "@/lib/copy";
 
 export default function CheckoutPage() {
   const cart = useCart();
@@ -70,9 +71,11 @@ export default function CheckoutPage() {
   if (cart.items.length === 0 && !demoMode) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
-        <h1 className="font-display text-3xl font-bold uppercase text-white">Cart is empty</h1>
+        <h1 className="font-display text-3xl font-bold uppercase text-white">
+          {copy.emptyCart}
+        </h1>
         <Link href="/order" className="mt-6 inline-block font-semibold text-fusion-gold">
-          Back to builder
+          {copy.backToBuilder}
         </Link>
       </div>
     );
@@ -82,10 +85,10 @@ export default function CheckoutPage() {
     <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[1.2fr_0.8fr]">
       <div>
         <h1 className="font-display text-4xl font-extrabold uppercase tracking-wide text-white">
-          Checkout
+          {copy.checkout}
         </h1>
         <p className="mt-1 text-fusion-muted">
-          {cart.orderType === "DINE_IN" ? "Dine in" : "To-go"}
+          {cart.orderType === "DINE_IN" ? copy.dineIn : copy.takeout}
           {cart.qrStationCode ? ` · ${cart.qrStationCode}` : ""}
         </p>
         <ul className="mt-6 space-y-3">
@@ -130,10 +133,10 @@ export default function CheckoutPage() {
 
       <div className="glass-panel h-fit rounded-[28px] p-6 shadow-glass">
         <h2 className="font-display text-2xl font-bold uppercase text-fusion-gold">
-          Contact & pay
+          {copy.contactPay}
         </h2>
         <label className="mt-4 block text-sm">
-          <span className="text-fusion-muted">Name</span>
+          <span className="text-fusion-muted">{copy.name}</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -142,7 +145,7 @@ export default function CheckoutPage() {
           />
         </label>
         <label className="mt-3 block text-sm">
-          <span className="text-fusion-muted">Mobile (SMS + rewards)</span>
+          <span className="text-fusion-muted">{copy.mobile}</span>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -152,16 +155,17 @@ export default function CheckoutPage() {
           />
         </label>
         <label className="mt-3 block text-sm">
-          <span className="text-fusion-muted">Order notes</span>
+          <span className="text-fusion-muted">{copy.orderNotes}</span>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
+            placeholder={copy.notesPlaceholder}
             className="mt-1 w-full rounded-2xl border border-fusion-line/40 bg-black/40 px-3 py-2.5 outline-none focus:border-fusion-gold"
             rows={2}
           />
         </label>
         <label className="mt-3 block text-sm">
-          <span className="text-fusion-muted">Redeem points (100 = $5)</span>
+          <span className="text-fusion-muted">{copy.redeemPoints}</span>
           <input
             type="number"
             min={0}
@@ -174,21 +178,21 @@ export default function CheckoutPage() {
 
         <dl className="mt-5 space-y-1 text-sm">
           <div className="flex justify-between">
-            <dt className="text-fusion-muted">Subtotal</dt>
+            <dt className="text-fusion-muted">{copy.subtotal}</dt>
             <dd>{formatMoney(cart.subtotalCents)}</dd>
           </div>
           {redeemDiscount > 0 && (
             <div className="flex justify-between text-fusion-emerald">
-              <dt>Rewards</dt>
+              <dt>{copy.rewards}</dt>
               <dd>−{formatMoney(redeemDiscount)}</dd>
             </div>
           )}
           <div className="flex justify-between">
-            <dt className="text-fusion-muted">Tax (est.)</dt>
+            <dt className="text-fusion-muted">{copy.tax}</dt>
             <dd>{formatMoney(taxEstimate)}</dd>
           </div>
           <div className="flex justify-between border-t border-fusion-line/40 pt-2 text-lg font-bold">
-            <dt>Total</dt>
+            <dt>{copy.total}</dt>
             <dd className="text-fusion-gold">{formatMoney(total)}</dd>
           </div>
         </dl>
@@ -201,7 +205,7 @@ export default function CheckoutPage() {
           onClick={pay}
           className="mt-5 w-full rounded-full bg-fusion-green py-3.5 font-bold uppercase tracking-wide text-white shadow-glow disabled:opacity-40"
         >
-          {busy ? "Starting checkout…" : "Pay with Stripe"}
+          {busy ? copy.paying : copy.payStripe}
         </button>
       </div>
     </div>

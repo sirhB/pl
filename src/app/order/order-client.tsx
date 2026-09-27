@@ -6,6 +6,7 @@ import { BowlBuilder } from "@/components/bowl-builder";
 import { MenuBrowser } from "@/components/menu-browser";
 import { CartDock } from "@/components/cart-dock";
 import { useCart } from "@/contexts/cart-context";
+import { copy } from "@/lib/copy";
 import type { MenuCategory } from "@/lib/menu";
 
 export default function OrderPageClient() {
@@ -67,10 +68,11 @@ export default function OrderPageClient() {
         {stationLabel ? (
           <p className="inline-flex items-center gap-2 rounded-full border border-fusion-emerald/30 bg-fusion-emerald/10 px-4 py-2 text-sm font-medium text-fusion-emerald">
             <span className="h-2 w-2 rounded-full bg-fusion-emerald" />
-            {stationLabel} · {cart.orderType === "DINE_IN" ? "Dine in" : "To-go"}
+            {copy.stationReady} {stationLabel} ·{" "}
+            {cart.orderType === "DINE_IN" ? copy.dineIn : copy.takeout}
           </p>
         ) : (
-          <p className="font-brush text-sm text-fusion-amber">Street food · Big flavor</p>
+          <p className="font-brush text-sm text-fusion-amber">{copy.streetLine}</p>
         )}
         <div className="flex rounded-full border border-fusion-line/40 bg-white/5 p-1">
           {(["TOGO", "DINE_IN"] as const).map((t) => (
@@ -84,7 +86,7 @@ export default function OrderPageClient() {
                   : "text-fusion-muted hover:text-white"
               }`}
             >
-              {t === "TOGO" ? "To-go" : "Dine in"}
+              {t === "TOGO" ? copy.takeout : copy.dineIn}
             </button>
           ))}
         </div>
@@ -92,20 +94,20 @@ export default function OrderPageClient() {
 
       {loading && (
         <p className="glass-panel rounded-[28px] p-10 text-fusion-muted">
-          Loading your fusion customizer…
+          {copy.loadingMenu}
         </p>
       )}
 
       {error && (
         <div className="glass-panel rounded-[28px] border-fusion-red/40 p-6">
-          <p className="font-semibold text-fusion-red-hot">Couldn’t load the menu</p>
+          <p className="font-semibold text-fusion-red-hot">{copy.menuErrorTitle}</p>
           <p className="mt-1 text-sm text-fusion-muted">{error}</p>
           <button
             type="button"
             onClick={() => load()}
             className="mt-4 rounded-full bg-fusion-gold px-5 py-2.5 text-sm font-bold text-fusion-void"
           >
-            Try again
+            {copy.tryAgain}
           </button>
         </div>
       )}

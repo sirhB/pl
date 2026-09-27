@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCart } from "@/contexts/cart-context";
 import { formatMoney } from "@/lib/utils";
+import { copy } from "@/lib/copy";
 
 export function CartDock() {
   const cart = useCart();
@@ -17,10 +18,10 @@ export function CartDock() {
         <div>
           <div className="text-[11px] font-bold uppercase tracking-wider opacity-70">
             {cart.itemCount} item{cart.itemCount === 1 ? "" : "s"} ·{" "}
-            {cart.orderType === "DINE_IN" ? "Dine in" : "To-go"}
+            {cart.orderType === "DINE_IN" ? copy.dineIn : copy.takeout}
           </div>
           <div className="font-display text-sm font-extrabold uppercase tracking-wide">
-            View cart & pay
+            {copy.viewCart}
           </div>
         </div>
         <div className="rounded-full bg-fusion-void px-4 py-2 font-display text-lg text-fusion-gold">

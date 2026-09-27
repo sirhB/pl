@@ -106,7 +106,7 @@ export async function seedDatabase(force = false) {
     salmon: inv("Mango Glazed Salmon", 28, 550, "PORTION", 6),
     shrimp: inv("Shrimp", 30, 480, "PORTION", 6),
     jerkPork: inv("Jerk Pork", 30, 400, "PORTION", 6),
-    bbqChicken: inv("BBQ Fried Chicken", 35, 320, "PORTION", 6),
+    bbqChicken: inv("Barbecue Fried Chicken", 35, 320, "PORTION", 6),
     wings: inv("Chicken Wings", 120, 90, "EACH", 24),
     chickenEmp: inv("Chicken Empanada", 40, 120, "EACH", 10),
     beefEmp: inv("Beef Empanada", 40, 130, "EACH", 10),
@@ -174,21 +174,31 @@ export async function seedDatabase(force = false) {
     "signature-bowls",
     "Signature Fusion Bowls",
     1,
-    "Protein + base + sides. Big flavor every bite."
+    "Island proteins, rice, and sides — bold flavor in every bite."
   );
   const byo = category(
     "build-your-bowl",
     "Build Your Fusion Bowl",
     2,
-    "1 protein $15 · 2 proteins $25. Jamaican fusion, your way."
+    "One protein for $15 · Two proteins for $25. Jamaican fusion, your way."
   );
-  const pasta = category("rasta-pasta", "Rasta Pasta", 3, "Creamy Caribbean pasta.");
-  const wingsCat = category("wings", "Prime Fusion Wings", 4, "Jerk-forward wing flavors.");
-  const empanadas = category("empanadas", "Empanadas", 5, "Mix & match bundles.");
-  const sides = category("sides", "Sides", 6);
-  const drinks = category("drinks", "Drinks", 7);
-  const extras = category("extras", "More Favorites", 8);
-  const deals = category("deals", "Prime Fusion Deals", 9, "Combos that hit different.");
+  const pasta = category("rasta-pasta", "Rasta Pasta", 3, "Creamy Caribbean pasta, cooked to order.");
+  const wingsCat = category(
+    "wings",
+    "Prime Fusion Wings",
+    4,
+    "Jerk-seasoned wings with island heat."
+  );
+  const empanadas = category("empanadas", "Empanadas", 5, "Mix and match your favorites.");
+  const sides = category("sides", "Sides", 6, "Fresh sides from the truck.");
+  const drinks = category("drinks", "Drinks", 7, "Cool down with fruit punch.");
+  const extras = category("extras", "More Favorites", 8, "Soup, porridge, and more.");
+  const deals = category(
+    "deals",
+    "Prime Fusion Deals",
+    9,
+    "Combos made for sharing — or keeping all to yourself."
+  );
 
   const bowlItems = [
     item(bowls.id, {
@@ -240,10 +250,10 @@ export async function seedDatabase(force = false) {
   ];
 
   const byoOne = item(byo.id, {
-    name: "1 Protein Fusion Bowl",
+    name: "One Protein Fusion Bowl",
     slug: "fusion-bowl-1-protein",
     description:
-      "Pick one protein + sides. Oxtails, Salmon, BBQ Fried Chicken, Jerk Pork, or Jerk Chicken.",
+      "Choose one protein and your sides. Oxtails, Salmon, Barbecue Fried Chicken, Jerk Pork, or Jerk Chicken.",
     priceCents: 1500,
     costCents: 550,
     isBuildYourOwn: true,
@@ -251,9 +261,9 @@ export async function seedDatabase(force = false) {
     tags: ["build", "custom"],
   });
   const byoTwo = item(byo.id, {
-    name: "2 Protein Fusion Bowl",
+    name: "Two Proteins Fusion Bowl",
     slug: "fusion-bowl-2-protein",
-    description: "Pick two proteins + sides for the full fusion experience.",
+    description: "Choose two proteins and your sides for the full fusion experience.",
     priceCents: 2500,
     costCents: 950,
     isBuildYourOwn: true,
@@ -272,7 +282,7 @@ export async function seedDatabase(force = false) {
   for (const opt of [
     { name: "Oxtails", inv: stock.oxtail.id, cost: 700 },
     { name: "Salmon", inv: stock.salmon.id, cost: 550 },
-    { name: "BBQ Fried Chicken", inv: stock.bbqChicken.id, cost: 320 },
+    { name: "Barbecue Fried Chicken", inv: stock.bbqChicken.id, cost: 320 },
     { name: "Jerk Pork", inv: stock.jerkPork.id, cost: 400 },
     { name: "Jerk Chicken", inv: stock.jerkChicken.id, cost: 350, isDefault: true },
   ]) {
@@ -381,7 +391,7 @@ export async function seedDatabase(force = false) {
     item(pasta.id, {
       name: "Jerk Chicken Rasta Pasta",
       slug: "jerk-chicken-rasta-pasta",
-      description: "Creamy rasta pasta with jerk chicken.",
+      description: "Creamy rasta pasta with jerk chicken — Caribbean comfort.",
       priceCents: 1600,
       costCents: 560,
       sortOrder: 1,
@@ -423,7 +433,7 @@ export async function seedDatabase(force = false) {
     isRequired: true,
   };
   db.modifierGroups.push(wingFlavor);
-  for (const name of ["Jerk", "Mango Jerk", "Sweet & Spicy Jamaican", "BBQ Jerk"]) {
+  for (const name of ["Jerk", "Mango Jerk", "Sweet & Spicy Jamaican", "Barbecue Jerk"]) {
     db.modifierOptions.push({
       id: cuid(),
       groupId: wingFlavor.id,
@@ -438,23 +448,25 @@ export async function seedDatabase(force = false) {
 
   const wingItems = [
     item(wingsCat.id, {
-      name: "Wings (6 pc)",
+      name: "Wings (6 pieces)",
       slug: "wings-6",
-      description: "Starting at $12. Choose your flavor.",
+      description: "Starting at $12. Choose your wing flavor.",
       priceCents: 1200,
       costCents: 480,
       sortOrder: 1,
     }),
     item(wingsCat.id, {
-      name: "Wings (10 pc)",
+      name: "Wings (10 pieces)",
       slug: "wings-10",
+      description: "Ten pieces. Choose your wing flavor.",
       priceCents: 1800,
       costCents: 780,
       sortOrder: 2,
     }),
     item(wingsCat.id, {
-      name: "Wings (20 pc)",
+      name: "Wings (20 pieces)",
       slug: "wings-20",
+      description: "Twenty pieces. Choose your wing flavor.",
       priceCents: 3400,
       costCents: 1500,
       sortOrder: 3,
@@ -462,7 +474,7 @@ export async function seedDatabase(force = false) {
     item(wingsCat.id, {
       name: "Wing Combo",
       slug: "wing-combo",
-      description: "6 wings + fries + Jamaican coleslaw + Fruit Punch.",
+      description: "Six wings, fries, Jamaican coleslaw, and Fruit Punch.",
       priceCents: 1800,
       costCents: 720,
       sortOrder: 4,
@@ -481,7 +493,7 @@ export async function seedDatabase(force = false) {
     isRequired: true,
   };
   db.modifierGroups.push(empFlavor);
-  for (const name of ["Chicken", "Beef", "Half & Half"]) {
+  for (const name of ["Chicken", "Beef", "Half and Half"]) {
     db.modifierOptions.push({
       id: cuid(),
       groupId: empFlavor.id,
@@ -512,7 +524,7 @@ export async function seedDatabase(force = false) {
     item(empanadas.id, {
       name: "Empanada Bundle — 2 for $7",
       slug: "empanada-bundle-2",
-      description: "Mix & match any 2 empanadas.",
+      description: "Mix and match any two empanadas.",
       priceCents: 700,
       costCents: 280,
       sortOrder: 3,
@@ -521,7 +533,7 @@ export async function seedDatabase(force = false) {
     item(empanadas.id, {
       name: "Empanada Bundle — 3 for $10",
       slug: "empanada-bundle-3",
-      description: "Mix & match any 3 empanadas.",
+      description: "Mix and match any three empanadas.",
       priceCents: 1000,
       costCents: 420,
       sortOrder: 4,
@@ -530,7 +542,7 @@ export async function seedDatabase(force = false) {
     item(empanadas.id, {
       name: "Empanada Bundle — 6 for $18",
       slug: "empanada-bundle-6",
-      description: "Mix & match any 6 empanadas.",
+      description: "Mix and match any six empanadas.",
       priceCents: 1800,
       costCents: 780,
       sortOrder: 5,
@@ -611,18 +623,18 @@ export async function seedDatabase(force = false) {
   });
 
   item(deals.id, {
-    name: "2 Bowls Deal",
+    name: "Two Bowls Deal",
     slug: "deal-2-bowls",
-    description: "Any 2 bowls from the signature list for $25.",
+    description: "Any two bowls from the signature list for $25.",
     priceCents: 2500,
     costCents: 1100,
     sortOrder: 1,
     tags: ["deal"],
   });
   item(deals.id, {
-    name: "2 Premium Bowls",
+    name: "Two Premium Bowls",
     slug: "deal-2-premium-bowls",
-    description: "Pepper Steak, Mango Glazed Salmon, or Oxtail — pick 2 for $30.",
+    description: "Pepper Steak, Mango Glazed Salmon, or Oxtail — pick two for $30.",
     priceCents: 3000,
     costCents: 1500,
     sortOrder: 2,
@@ -631,7 +643,7 @@ export async function seedDatabase(force = false) {
   item(deals.id, {
     name: "Bowl Combo",
     slug: "deal-bowl-combo",
-    description: "1 bowl + 1 empanada + fruit punch.",
+    description: "One bowl, one empanada, and fruit punch.",
     priceCents: 2000,
     costCents: 800,
     sortOrder: 3,
@@ -640,7 +652,7 @@ export async function seedDatabase(force = false) {
   item(deals.id, {
     name: "Full Fusion Combo",
     slug: "deal-full-fusion",
-    description: "2 bowls + 2 empanadas + 2 fruit punches.",
+    description: "Two bowls, two empanadas, and two fruit punches.",
     priceCents: 3500,
     costCents: 1500,
     sortOrder: 4,
@@ -649,9 +661,9 @@ export async function seedDatabase(force = false) {
 
   const deal = {
     id: cuid(),
-    name: "2 Bowls for $25",
+    name: "Two Bowls for $25",
     slug: "two-bowls-25",
-    description: "Choose any 2 signature bowls.",
+    description: "Choose any two signature bowls.",
     priceCents: 2500,
     isActive: true,
     rulesJson: JSON.stringify({

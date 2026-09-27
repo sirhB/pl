@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { formatMoney } from "@/lib/utils";
 import { useCart } from "@/contexts/cart-context";
+import { copy } from "@/lib/copy";
 import type { MenuCategory, MenuItemDTO } from "@/lib/menu";
 
 type Props = {
@@ -13,12 +14,14 @@ type Props = {
   onAdded?: () => void;
 };
 
-const PROTEIN_META: Record<string, { blurb: string; hue: string; short: string }> = {
-  Oxtails: { blurb: "Slow-braised", hue: "#5c3d2e", short: "OX" },
-  Salmon: { blurb: "Mango-glazed", hue: "#c45c3e", short: "SA" },
-  "BBQ Fried Chicken": { blurb: "Crispy & sauced", hue: "#d4a017", short: "BBQ" },
-  "Jerk Pork": { blurb: "Smoky heat", hue: "#9b2226", short: "JP" },
-  "Jerk Chicken": { blurb: "Charred classic", hue: "#16a34a", short: "JC" },
+/** Display names stay fully spelled out — no letter codes or abbreviations. */
+const PROTEIN_META: Record<string, { blurb: string; hue: string }> = {
+  Oxtails: { blurb: "Slow-braised until tender", hue: "#5c3d2e" },
+  Salmon: { blurb: "Mango-glazed", hue: "#c45c3e" },
+  "Barbecue Fried Chicken": { blurb: "Crispy and sauced", hue: "#d4a017" },
+  "BBQ Fried Chicken": { blurb: "Crispy and sauced", hue: "#d4a017" },
+  "Jerk Pork": { blurb: "Smoky island heat", hue: "#9b2226" },
+  "Jerk Chicken": { blurb: "Charred classic", hue: "#16a34a" },
 };
 
 const BASES = [
@@ -43,6 +46,11 @@ type Addon = {
   group?: string;
 };
 
+function displayProteinName(name: string) {
+  if (name === "BBQ Fried Chicken") return "Barbecue Fried Chicken";
+  return name;
+}
+
 function ToggleRow({
   label,
   blurb,
@@ -50,7 +58,6 @@ function ToggleRow({
   on,
   disabled,
   hue,
-  short,
   onToggle,
 }: {
   label: string;
@@ -59,7 +66,6 @@ function ToggleRow({
   on: boolean;
   disabled?: boolean;
   hue?: string;
-  short?: string;
   onToggle: () => void;
 }) {
   return (
@@ -74,10 +80,13 @@ function ToggleRow({
       } ${disabled && !on ? "opacity-40" : ""}`}
     >
       <span
-        className="flex h-11 w-11 items-center justify-center rounded-full text-[10px] font-extrabold tracking-wide text-white shadow-glass"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-glass"
         style={{ background: hue || "#3f3f46" }}
+        aria-hidden
       >
-        {short || label.slice(0, 2).toUpperCase()}
+        <span
+          className={`h-3 w-3 rounded-full ${on ? "bg-white" : "bg-white/35"}`}
+        />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold text-white">{label}</span>
@@ -112,7 +121,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
   const activeItem = tier === 1 ? oneProtein : twoProtein;
   const proteinOptions =
     activeItem.modifierGroups.find((g) => g.name === "Proteins")?.options.map((o) => o.name) ||
-    Object.keys(PROTEIN_META);
+    Object.keys(PROTEIN_META).filter((k) => k !== "BBQ Fried Chicken");
 
   const drinks = menu.find((c) => c.slug === "drinks")?.items || [];
   const empanadas = (menu.find((c) => c.slug === "empanadas")?.items || []).filter(
@@ -132,10 +141,10 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
       });
     }
     if (wingItem) {
-      for (const flavor of ["Jerk", "Mango Jerk", "BBQ Jerk"]) {
+      for (const flavor of ["Jerk", "Mango Jerk", "Barbecue Jerk"]) {
         list.push({
           key: `wing-${flavor}`,
-          name: `Wings 6pc · ${flavor}`,
+          name: copy.wingsPieces(6, flavor),
           priceDeltaCents: wingItem.priceCents,
           menuItemId: wingItem.id,
           group: "Wings",
@@ -183,13 +192,10 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
 
   function toggleProtein(name: string) {
     setProteins((prev) => {
-      // Deselect if already chosen
       if (prev.includes(name)) {
         return prev.filter((p) => p !== name);
       }
-      // 1-protein bowl: radio behavior — always swap to the new choice
       if (tier === 1) return [name];
-      // 2-protein bowl: fill slots, then replace the oldest
       if (prev.length >= 2) return [...prev.slice(1), name];
       return [...prev, name];
     });
@@ -216,11 +222,16 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
 
   function addToOrder() {
     if (proteins.length !== tier || sides.length < 1) return;
+    const proteinLabel = proteins.map(displayProteinName).join(" + ");
+    const bowlName =
+      tier === 1
+        ? `${copy.oneProteinBowl} · ${proteinLabel}`
+        : `${copy.twoProteinBowl} · ${proteinLabel}`;
     const modifiers = [
       { groupName: "Base", optionName: base, priceDeltaCents: baseDelta },
       ...proteins.map((p) => ({
         groupName: "Proteins",
-        optionName: p,
+        optionName: displayProteinName(p),
         priceDeltaCents: 0,
       })),
       ...sides.map((s) => ({
@@ -231,7 +242,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
     ];
     cart.addItem({
       menuItemId: activeItem.id,
-      name: `${tier} Protein Bowl · ${proteins.join(" + ")}`,
+      name: bowlName,
       unitPriceCents: bowlPrice,
       quantity: 1,
       modifiers,
@@ -255,7 +266,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
   }
 
   const badges = [
-    ...proteins.map((p) => ({ label: p, tone: "gold" as const })),
+    ...proteins.map((p) => ({ label: displayProteinName(p), tone: "gold" as const })),
     { label: base, tone: "green" as const },
     ...sides.filter((s) => s !== base).map((s) => ({ label: s, tone: "green" as const })),
   ];
@@ -265,16 +276,14 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-fusion-gold">
-            Select protein
+            {copy.proteinPanelTitle}
           </h3>
           <span className="rounded-full bg-fusion-red/20 px-2.5 py-0.5 text-[11px] font-bold text-fusion-red-hot">
-            {proteins.length}/{tier}
+            {proteins.length} of {tier}
           </span>
         </div>
         <p className="mb-2 text-xs text-fusion-muted">
-          {tier === 1
-            ? "Tap a protein to select it — tap again to clear."
-            : "Pick up to 2. Tap another to swap when full."}
+          {tier === 1 ? copy.proteinPanelHintOne : copy.proteinPanelHintTwo}
         </p>
         <div className="space-y-1.5">
           {proteinOptions.map((name) => {
@@ -283,10 +292,9 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
             return (
               <ToggleRow
                 key={name}
-                label={name}
+                label={displayProteinName(name)}
                 blurb={meta?.blurb}
                 hue={meta?.hue}
-                short={meta?.short}
                 on={on}
                 onToggle={() => toggleProtein(name)}
               />
@@ -298,18 +306,19 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-fusion-emerald">
-            Select sides
+            {copy.selectSides}
           </h3>
           <span className="rounded-full bg-fusion-emerald/15 px-2.5 py-0.5 text-[11px] font-bold text-fusion-emerald">
-            {sides.length}/3
+            {sides.length} of 3
           </span>
         </div>
+        <p className="mb-2 text-xs text-fusion-muted">{copy.sidesHint}</p>
         <div className="space-y-1.5">
           {SIDE_OPTIONS.map((opt) => (
             <ToggleRow
               key={opt.name}
               label={opt.name}
-              blurb="Fresh daily"
+              blurb={copy.freshDaily}
               price={opt.priceDeltaCents}
               hue="#166534"
               on={sides.includes(opt.name)}
@@ -321,8 +330,9 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
 
       <section>
         <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-fusion-red-hot">
-          Add-ons & extras
+          {copy.addOnsTitle}
         </h3>
+        <p className="mb-2 text-xs text-fusion-muted">{copy.addOnsHint}</p>
         <div className="space-y-1.5">
           {addonCatalog.map((a) => (
             <ToggleRow
@@ -344,17 +354,18 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
     <section className="relative animate-fade-up">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="font-brush text-lg text-fusion-amber">Jamaican Fusion, Your Way</p>
+          <p className="font-brush text-lg text-fusion-amber">{copy.brandTag}</p>
           <h1 className="font-display text-3xl font-extrabold uppercase tracking-wide text-white sm:text-4xl">
-            Build Your Fusion Bowl
+            {copy.buildTitle}
           </h1>
+          <p className="mt-2 max-w-xl text-sm text-fusion-muted">{copy.buildIntro}</p>
         </div>
         <button
           type="button"
           className="rounded-full border border-fusion-line bg-white/5 px-4 py-2 text-sm font-semibold text-white lg:hidden"
           onClick={() => setSheetOpen(true)}
         >
-          Customize · {proteins.length}P
+          {copy.customizeMobile}
         </button>
       </div>
 
@@ -362,7 +373,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
         {/* LEFT */}
         <aside className="glass-panel order-2 flex flex-col rounded-[28px] p-5 shadow-glass xl:order-1">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-fusion-muted">
-            Configuration
+            {copy.configuration}
           </p>
 
           <div className="mt-4 grid grid-cols-2 gap-3">
@@ -378,7 +389,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
                 }`}
               >
                 <div className="font-display text-sm font-bold uppercase tracking-wide">
-                  {n} Protein{n > 1 ? "s" : ""}
+                  {n === 1 ? copy.oneProtein : copy.twoProteins}
                 </div>
                 <div className="mt-1 font-display text-2xl text-fusion-gold">
                   {formatMoney(n === 1 ? oneProtein.priceCents : twoProtein.priceCents)}
@@ -390,16 +401,14 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
           <div className="mt-6">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-fusion-gold">
-                Choose protein{tier > 1 ? "s" : ""}
+                {tier > 1 ? copy.chooseProteins : copy.chooseProtein}
               </p>
               <span className="rounded-full bg-fusion-red/20 px-2.5 py-0.5 text-[11px] font-bold text-fusion-red-hot">
-                {proteins.length}/{tier}
+                {proteins.length} of {tier}
               </span>
             </div>
             <p className="mb-3 text-xs text-fusion-muted">
-              {tier === 1
-                ? "Select one — tap another to switch."
-                : "Select two — tap to add or remove."}
+              {tier === 1 ? copy.proteinHintOne : copy.proteinHintTwo}
             </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
               {proteinOptions.map((name) => {
@@ -417,15 +426,20 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
                     }`}
                   >
                     <span
-                      className="flex h-10 w-10 items-center justify-center rounded-full text-[10px] font-extrabold text-white"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
                       style={{ background: meta?.hue || "#3f3f46" }}
+                      aria-hidden
                     >
-                      {meta?.short || name.slice(0, 2)}
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full ${on ? "bg-white" : "bg-white/35"}`}
+                      />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-white">{name}</span>
+                      <span className="block text-sm font-semibold text-white">
+                        {displayProteinName(name)}
+                      </span>
                       <span className="block text-[11px] text-fusion-muted">
-                        {meta?.blurb || "Prime Fusion"}
+                        {meta?.blurb || copy.brandTag}
                       </span>
                     </span>
                     <span
@@ -445,7 +459,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
 
           <div className="mt-6">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-fusion-muted">
-              Select base
+              {copy.selectBase}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {BASES.map((b) => (
@@ -473,7 +487,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
             <div className="flex items-end justify-between gap-3">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-fusion-muted">
-                  Total
+                  {copy.total}
                 </p>
                 <p
                   key={priceFlash}
@@ -483,24 +497,26 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
                 </p>
               </div>
               <p className="pb-1 text-xs text-fusion-muted">
-                Bowl {formatMoney(bowlPrice)}
-                {addonDelta > 0 ? ` + extras` : ""}
+                {copy.bowlOnly} {formatMoney(bowlPrice)}
+                {addonDelta > 0 ? ` · ${copy.plusExtras}` : ""}
               </p>
             </div>
             <button
               type="button"
               onClick={addToOrder}
               disabled={proteins.length !== tier}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-fusion-green px-5 py-4 text-sm font-bold uppercase tracking-wide text-white shadow-glow transition hover:bg-fusion-emerald disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-4 flex w-full flex-col items-center justify-center gap-1 rounded-full bg-fusion-green px-5 py-4 text-sm font-bold uppercase tracking-wide text-white shadow-glow transition hover:bg-fusion-emerald disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {addedFlash
-                ? "Added ✓"
-                : proteins.length !== tier
-                  ? `Pick ${tier - proteins.length} more protein${tier - proteins.length === 1 ? "" : "s"}`
-                  : "Add to Order"}
-              {proteins.length === tier && (
-                <span className="rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold normal-case tracking-normal">
-                  ~{activeItem.prepMinutes} min pickup
+              <span>
+                {addedFlash
+                  ? copy.added
+                  : proteins.length !== tier
+                    ? copy.pickMoreProtein(tier - proteins.length)
+                    : copy.addToOrder}
+              </span>
+              {proteins.length === tier && !addedFlash && (
+                <span className="text-[11px] font-semibold normal-case tracking-normal opacity-90">
+                  {copy.pickupEta(activeItem.prepMinutes)}
                 </span>
               )}
             </button>
@@ -528,18 +544,17 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="rounded-full bg-black/55 px-3 py-1 text-center backdrop-blur-sm">
+                  <div className="rounded-full bg-black/55 px-4 py-2 text-center backdrop-blur-sm">
                     <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-fusion-gold">
-                      {tier}P Bowl
+                      {tier === 1 ? copy.oneProteinBowl : copy.twoProteinBowl}
                     </p>
                     <p className="text-xs font-semibold text-white">
-                      {proteins.join(" + ") || "Pick protein"}
+                      {proteins.map(displayProteinName).join(" + ") || copy.pickProtein}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Floating badges */}
               <div className="pointer-events-none absolute inset-0">
                 {badges.slice(0, 5).map((b, i) => {
                   const positions = [
@@ -568,32 +583,31 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
 
         {/* RIGHT desktop */}
         <aside className="glass-panel order-3 hidden max-h-[720px] overflow-y-auto rounded-[28px] p-5 shadow-glass xl:block">
-          <p className="mb-4 font-brush text-base text-fusion-amber">Toggle your way</p>
+          <p className="mb-4 font-brush text-base text-fusion-amber">{copy.togglePanelTitle}</p>
           {togglePanel}
         </aside>
       </div>
 
-      {/* Mobile bottom sheet */}
       {sheetOpen && (
         <div className="fixed inset-0 z-50 xl:hidden">
           <button
             type="button"
             className="absolute inset-0 bg-black/60"
-            aria-label="Close customizer"
+            aria-label={copy.close}
             onClick={() => setSheetOpen(false)}
           />
           <div className="glass-panel absolute inset-x-0 bottom-0 max-h-[82vh] overflow-y-auto rounded-t-[28px] p-5 pb-8 shadow-glass animate-fade-up">
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/20" />
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-lg font-bold uppercase tracking-wide">
-                Customize
+                {copy.customizeMobile}
               </h2>
               <button
                 type="button"
                 className="text-sm font-semibold text-fusion-gold"
                 onClick={() => setSheetOpen(false)}
               >
-                Done
+                {copy.done}
               </button>
             </div>
             {togglePanel}

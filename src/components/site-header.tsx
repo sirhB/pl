@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/contexts/cart-context";
 import { formatMoney } from "@/lib/utils";
+import { copy } from "@/lib/copy";
 
 const links = [
-  { href: "/order", label: "Build Bowl" },
-  { href: "/order#menu", label: "Combos" },
-  { href: "/order#sides", label: "Sides & Drinks" },
+  { href: "/order", label: copy.navBuild },
+  { href: "/order#menu", label: copy.navMenu },
+  { href: "/rewards", label: copy.navRewards },
 ];
 
 export function SiteHeader() {
@@ -25,7 +26,7 @@ export function SiteHeader() {
           </Link>
           <nav className="flex gap-4 text-sm text-fusion-muted">
             <Link href="/order" className="hover:text-white">
-              Guest order
+              {copy.guestOrder}
             </Link>
             <Link href="/admin" className="hover:text-white">
               Admin
@@ -70,7 +71,7 @@ export function SiteHeader() {
           href="/checkout"
           className="rounded-full border border-fusion-amber/40 bg-fusion-gold/10 px-4 py-2 text-sm font-bold text-fusion-gold transition hover:bg-fusion-gold hover:text-fusion-void"
         >
-          Cart
+          {copy.cart}
           {cart.itemCount
             ? ` ${formatMoney(cart.subtotalCents)} (${cart.itemCount})`
             : ""}

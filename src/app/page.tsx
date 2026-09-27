@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { copy } from "@/lib/copy";
 
 export default function HomePage() {
   return (
@@ -19,7 +20,7 @@ export default function HomePage() {
               <div className="mb-3 flex items-center gap-2 text-fusion-gold">
                 <span className="text-2xl">♛</span>
                 <span className="text-xs font-bold uppercase tracking-[0.28em]">
-                  Food Truck & Catering
+                  {copy.foodTruckLine}
                 </span>
               </div>
               <h1 className="font-display text-5xl font-extrabold uppercase leading-[0.95] tracking-wide text-white sm:text-7xl">
@@ -28,24 +29,23 @@ export default function HomePage() {
                 <span className="text-fusion-gold">Fusion</span>
               </h1>
               <p className="mt-3 font-brush text-xl text-fusion-amber">
-                Jamaican Fusion, Your Way
+                {copy.brandTag}
               </p>
               <p className="mt-4 max-w-md text-base text-white/75">
-                Build your bowl on a dark luxury customizer — tier, base, proteins, sides, and
-                extras with live pricing.
+                {copy.homeSupport}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href="/order"
                   className="rounded-full bg-fusion-green px-6 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-glow transition hover:bg-fusion-emerald"
                 >
-                  Build a bowl
+                  {copy.homeCta}
                 </Link>
                 <Link
                   href="/order?station=truck-window"
                   className="rounded-full border border-fusion-line bg-white/5 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:border-fusion-gold"
                 >
-                  Truck window QR
+                  {copy.homeQr}
                 </Link>
               </div>
             </div>

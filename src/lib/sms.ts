@@ -50,22 +50,22 @@ export function orderStatusMessage(
   status: string,
   totalLabel?: string
 ) {
-  const base = `Prime Fusion order #${orderNumber}`;
+  const base = `Prime Fusion order ${orderNumber}`;
   switch (status) {
     case "PAID":
     case "RECEIVED":
-      return `${base} received! We're firing up the grill. Track updates here.`;
+      return `${base} is in. We are firing up the grill — bold flavor on the way.`;
     case "PREPARING":
-      return `${base} is being prepared now. Big flavor incoming.`;
+      return `${base} is cooking now. Almost ready for you.`;
     case "READY":
-      return `${base} is READY for pickup! Come grab it at the truck window.`;
+      return `${base} is ready for pickup at the truck window. Come get it while it is hot.`;
     case "COMPLETED":
-      return `${base} completed. Thanks for choosing Prime Fusion!${
+      return `${base} is complete. Thank you for choosing Prime Fusion.${
         totalLabel ? ` Receipt total: ${totalLabel}.` : ""
       }`;
     case "CANCELLED":
-      return `${base} was cancelled. Reach out if you need help.`;
+      return `${base} was cancelled. Message us if you need help.`;
     default:
-      return `${base} update: ${status}`;
+      return `${base} update: ${status.replace(/_/g, " ")}`;
   }
 }

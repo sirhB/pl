@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { formatMoney } from "@/lib/utils";
 import { useCart } from "@/contexts/cart-context";
+import { copy } from "@/lib/copy";
 import type { MenuCategory, MenuItemDTO } from "@/lib/menu";
 
 type Props = {
@@ -109,13 +110,11 @@ export function MenuBrowser({ categories }: Props) {
   return (
     <section id="menu" className="space-y-5 animate-fade-up" style={{ animationDelay: "0.1s" }}>
       <div>
-        <p className="font-brush text-lg text-fusion-amber">Full menu</p>
+        <p className="font-brush text-lg text-fusion-amber">{copy.streetLine}</p>
         <h2 className="font-display text-3xl font-extrabold uppercase tracking-wide text-white">
-          Combos, sides & more
+          {copy.fullMenuTitle}
         </h2>
-        <p className="mt-1 text-sm text-fusion-muted">
-          Every item is customizable — tap to make it yours.
-        </p>
+        <p className="mt-1 text-sm text-fusion-muted">{copy.fullMenuSub}</p>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -160,7 +159,7 @@ export function MenuBrowser({ categories }: Props) {
                   )}
                   {item.modifierGroups.length > 0 && (
                     <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-fusion-emerald">
-                      Customizable
+                      {copy.customizable}
                     </p>
                   )}
                 </div>
@@ -170,10 +169,10 @@ export function MenuBrowser({ categories }: Props) {
                   className="mt-5 rounded-full border border-fusion-line/50 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-fusion-gold hover:bg-fusion-gold hover:text-fusion-void"
                 >
                   {flashId === item.id
-                    ? "Added ✓"
+                    ? copy.added
                     : item.modifierGroups.length
-                      ? "Customize"
-                      : "Add to cart"}
+                      ? copy.customize
+                      : copy.addToCart}
                 </button>
               </article>
             ))}
@@ -185,7 +184,7 @@ export function MenuBrowser({ categories }: Props) {
           <div className="glass-panel max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[28px] p-6 shadow-glass animate-fade-up">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-brush text-fusion-amber">Make it yours</p>
+                <p className="font-brush text-fusion-amber">{copy.makeItYours}</p>
                 <h3 className="font-display text-2xl font-bold uppercase tracking-wide text-white">
                   {customizing.name}
                 </h3>
@@ -198,7 +197,7 @@ export function MenuBrowser({ categories }: Props) {
                 onClick={() => setCustomizing(null)}
                 className="rounded-full border border-white/10 px-3 py-1 text-sm text-fusion-muted hover:text-white"
               >
-                Close
+                {copy.close}
               </button>
             </div>
 
@@ -211,7 +210,7 @@ export function MenuBrowser({ categories }: Props) {
                         {g.name}
                       </p>
                       <span className="text-xs text-fusion-muted">
-                        {(selectedMods[g.id] || []).length}/{g.maxSelect}
+                        {(selectedMods[g.id] || []).length} of {g.maxSelect}
                       </span>
                     </div>
                     <ul className="space-y-2">
@@ -254,12 +253,12 @@ export function MenuBrowser({ categories }: Props) {
 
             <label className="mt-5 block">
               <span className="text-xs font-bold uppercase tracking-[0.14em] text-fusion-muted">
-                Notes
+                {copy.notes}
               </span>
               <input
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Allergies, extra sauce…"
+                placeholder={copy.notesPlaceholder}
                 className="mt-2 w-full rounded-2xl border border-fusion-line/40 bg-black/40 px-4 py-3 text-sm outline-none focus:border-fusion-gold"
               />
             </label>
@@ -290,11 +289,11 @@ export function MenuBrowser({ categories }: Props) {
             <button
               type="button"
               onClick={confirmCustomize}
-              className="mt-5 flex w-full items-center justify-between rounded-full bg-fusion-green px-6 py-4 font-bold uppercase tracking-wide text-white shadow-glow"
+              className="mt-5 flex w-full flex-col items-center justify-center gap-1 rounded-full bg-fusion-green px-6 py-4 font-bold uppercase tracking-wide text-white shadow-glow"
             >
-              <span>Add to cart</span>
-              <span className="rounded-full bg-black/25 px-3 py-1 text-xs normal-case">
-                ~{customizing.prepMinutes} min
+              <span>{copy.addToCart}</span>
+              <span className="text-[11px] font-semibold normal-case tracking-normal opacity-90">
+                {copy.pickupEta(customizing.prepMinutes)}
               </span>
             </button>
           </div>
