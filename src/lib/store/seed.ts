@@ -666,11 +666,44 @@ export async function seedDatabase(force = false) {
     return group;
   }
 
+  const BOWL_EXTRA_OPTS = [
+    { name: "Add Mac & Cheese", delta: 200, cost: 160 },
+    { name: "Swap to Fried Rice", delta: 0, cost: 100 },
+    { name: "Extra Plantains", delta: 150, cost: 90 },
+    { name: "No Coleslaw", delta: 0, cost: 0 },
+    { name: "No Plantains", delta: 0, cost: 0 },
+    { name: "Extra Jerk Sauce", delta: 50, cost: 20 },
+  ];
+
+  function makeExtrasGroup(slotLabel: string) {
+    const group = {
+      id: cuid(),
+      name: `${slotLabel} extras`,
+      minSelect: 0,
+      maxSelect: 4,
+      isRequired: false,
+    };
+    db.modifierGroups.push(group);
+    for (const opt of BOWL_EXTRA_OPTS) {
+      db.modifierOptions.push({
+        id: cuid(),
+        groupId: group.id,
+        name: opt.name,
+        priceDeltaCents: opt.delta,
+        costDeltaCents: opt.cost,
+        isDefault: false,
+        isActive: true,
+        inventoryItemId: null,
+      });
+    }
+    return group;
+  }
+
   const dealTwoBowls = item(deals.id, {
     name: "Two Bowls Deal",
     slug: "deal-2-bowls",
     description:
-      "Any two signature bowls for $25. Choose each bowl — same extras as ordering them alone.",
+      "Any two signature bowls for $25. Customize each bowl one at a time — extras and swaps apply per bowl.",
     priceCents: 2500,
     costCents: 1100,
     sortOrder: 1,
@@ -680,7 +713,7 @@ export async function seedDatabase(force = false) {
     name: "Two Premium Bowls",
     slug: "deal-2-premium-bowls",
     description:
-      "Pepper Steak, Mango Glazed Salmon, or Oxtail — pick two for $30. Customize each bowl.",
+      "Pepper Steak, Mango Glazed Salmon, or Oxtail — pick two for $30. Customize each bowl one at a time.",
     priceCents: 3000,
     costCents: 1500,
     sortOrder: 2,
@@ -689,7 +722,8 @@ export async function seedDatabase(force = false) {
   const dealBowlCombo = item(deals.id, {
     name: "Bowl Combo",
     slug: "deal-bowl-combo",
-    description: "One signature bowl, one empanada, and fruit punch. Customize every item.",
+    description:
+      "One signature bowl, one empanada, and fruit punch. Customize the bowl, then choose your empanada.",
     priceCents: 2000,
     costCents: 800,
     sortOrder: 3,
@@ -699,7 +733,7 @@ export async function seedDatabase(force = false) {
     name: "Full Fusion Combo",
     slug: "deal-full-fusion",
     description:
-      "Two signature bowls, two empanadas, and two fruit punches. Customize every item in the combo.",
+      "Two signature bowls, two empanadas, and two fruit punches. Customize each item one at a time.",
     priceCents: 3500,
     costCents: 1500,
     sortOrder: 4,
@@ -709,22 +743,32 @@ export async function seedDatabase(force = false) {
   const dealBowl1 = makePickGroup("Bowl one", signatureBowlNames, {
     defaultName: signatureBowlNames[0],
   });
+  const dealBowl1Extras = makeExtrasGroup("Bowl one");
   const dealBowl2 = makePickGroup("Bowl two", signatureBowlNames, {
     defaultName: signatureBowlNames[4] || signatureBowlNames[0],
   });
+  const dealBowl2Extras = makeExtrasGroup("Bowl two");
+
   const premiumBowl1 = makePickGroup("Bowl one", premiumBowlNames);
+  const premiumBowl1Extras = makeExtrasGroup("Bowl one");
   const premiumBowl2 = makePickGroup("Bowl two", premiumBowlNames, {
     defaultName: premiumBowlNames[1] || premiumBowlNames[0],
   });
+  const premiumBowl2Extras = makeExtrasGroup("Bowl two");
+
   const comboBowl = makePickGroup("Choose your bowl", signatureBowlNames);
+  const comboBowlExtras = makeExtrasGroup("Choose your bowl");
   const comboEmpanada = makePickGroup("Choose your empanada", [
     "Chicken Empanada",
     "Beef Empanada",
   ]);
+
   const fullBowl1 = makePickGroup("Bowl one", signatureBowlNames);
+  const fullBowl1Extras = makeExtrasGroup("Bowl one");
   const fullBowl2 = makePickGroup("Bowl two", signatureBowlNames, {
     defaultName: signatureBowlNames[1] || signatureBowlNames[0],
   });
+  const fullBowl2Extras = makeExtrasGroup("Bowl two");
   const fullEmp1 = makePickGroup("Empanada one", ["Chicken Empanada", "Beef Empanada"]);
   const fullEmp2 = makePickGroup("Empanada two", ["Chicken Empanada", "Beef Empanada"], {
     defaultName: "Beef Empanada",
@@ -732,19 +776,22 @@ export async function seedDatabase(force = false) {
 
   db.menuItemModifiers.push(
     { menuItemId: dealTwoBowls.id, groupId: dealBowl1.id },
+    { menuItemId: dealTwoBowls.id, groupId: dealBowl1Extras.id },
     { menuItemId: dealTwoBowls.id, groupId: dealBowl2.id },
-    { menuItemId: dealTwoBowls.id, groupId: bowlExtras.id },
+    { menuItemId: dealTwoBowls.id, groupId: dealBowl2Extras.id },
     { menuItemId: dealPremium.id, groupId: premiumBowl1.id },
+    { menuItemId: dealPremium.id, groupId: premiumBowl1Extras.id },
     { menuItemId: dealPremium.id, groupId: premiumBowl2.id },
-    { menuItemId: dealPremium.id, groupId: bowlExtras.id },
+    { menuItemId: dealPremium.id, groupId: premiumBowl2Extras.id },
     { menuItemId: dealBowlCombo.id, groupId: comboBowl.id },
+    { menuItemId: dealBowlCombo.id, groupId: comboBowlExtras.id },
     { menuItemId: dealBowlCombo.id, groupId: comboEmpanada.id },
-    { menuItemId: dealBowlCombo.id, groupId: bowlExtras.id },
     { menuItemId: dealFullFusion.id, groupId: fullBowl1.id },
+    { menuItemId: dealFullFusion.id, groupId: fullBowl1Extras.id },
     { menuItemId: dealFullFusion.id, groupId: fullBowl2.id },
+    { menuItemId: dealFullFusion.id, groupId: fullBowl2Extras.id },
     { menuItemId: dealFullFusion.id, groupId: fullEmp1.id },
-    { menuItemId: dealFullFusion.id, groupId: fullEmp2.id },
-    { menuItemId: dealFullFusion.id, groupId: bowlExtras.id }
+    { menuItemId: dealFullFusion.id, groupId: fullEmp2.id }
   );
 
   const deal = {

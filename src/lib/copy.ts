@@ -42,7 +42,8 @@ export const copy = {
   wingFlavorHint:
     "Pick one flavor for the whole order, or pick two flavors for half and half.",
   wingHalfLabel: (a: string, b: string) => `Half ${a} / Half ${b}`,
-  dealCustomizeHint: "Choose each item in this deal — just like ordering them on their own.",
+  dealCustomizeHint:
+    "Customize each item in this deal one at a time — extras and swaps apply to that item only.",
   cart: "Your cart",
   viewCart: "Review cart and pay",
   checkout: "Checkout",

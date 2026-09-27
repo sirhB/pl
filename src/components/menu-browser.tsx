@@ -6,6 +6,7 @@ import { formatMoney } from "@/lib/utils";
 import { useCart } from "@/contexts/cart-context";
 import { copy } from "@/lib/copy";
 import { itemImageBySlug, menuImages, optionImages } from "@/lib/menu-images";
+import { DealCustomizer, isMultiSlotDeal } from "@/components/deal-customizer";
 import type { MenuCategory, MenuItemDTO } from "@/lib/menu";
 
 type Props = {
@@ -28,6 +29,7 @@ export function MenuBrowser({ categories }: Props) {
       visible[0]?.slug
   );
   const [customizing, setCustomizing] = useState<MenuItemDTO | null>(null);
+  const [dealCustomizing, setDealCustomizing] = useState<MenuItemDTO | null>(null);
   const [selectedMods, setSelectedMods] = useState<Record<string, string[]>>({});
   const [notes, setNotes] = useState("");
   const [qty, setQty] = useState(1);
@@ -36,6 +38,10 @@ export function MenuBrowser({ categories }: Props) {
   const active = visible.find((c) => c.slug === activeSlug) || visible[0];
 
   function openCustomize(item: MenuItemDTO) {
+    if (isMultiSlotDeal(item)) {
+      setDealCustomizing(item);
+      return;
+    }
     const defaults: Record<string, string[]> = {};
     for (const g of item.modifierGroups) {
       const def = g.options.filter((o) => o.isDefault).map((o) => o.name);
@@ -129,6 +135,26 @@ export function MenuBrowser({ categories }: Props) {
         </h2>
         <p className="mt-1 text-sm text-fusion-muted">{copy.fullMenuSub}</p>
       </div>
+
+      {dealCustomizing && (
+        <DealCustomizer
+          item={dealCustomizing}
+          onClose={() => setDealCustomizing(null)}
+          onConfirm={({ modifiers, unitPriceCents, label, notes: dealNotes }) => {
+            cart.addItem({
+              menuItemId: dealCustomizing.id,
+              name: label,
+              unitPriceCents,
+              quantity: 1,
+              modifiers,
+              notes: dealNotes,
+            });
+            setFlashId(dealCustomizing.id);
+            setDealCustomizing(null);
+            setTimeout(() => setFlashId(null), 1200);
+          }}
+        />
+      )}
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {visible.map((cat) => (
