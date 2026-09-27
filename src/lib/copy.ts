@@ -88,4 +88,11 @@ export const copy = {
   freshDaily: "Fresh daily",
   wingsPieces: (n: number, flavor: string) =>
     `Wings (${n} pieces) · ${flavor}`,
+  included: "Included",
+  upgrade: "Upgrade",
+  popularUpgrade: "Guest favorite",
+  baseHint: "Rice and peas or fried rice come with your bowl. Upgrade the base if you want something richer.",
+  upgradeRasta: "Creamy Caribbean pasta",
+  upgradeMac: "Comfort classic",
+  addOnPairing: "Goes great with your bowl",
 } as const;

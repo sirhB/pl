@@ -5,6 +5,7 @@ import Image from "next/image";
 import { formatMoney } from "@/lib/utils";
 import { useCart } from "@/contexts/cart-context";
 import { copy } from "@/lib/copy";
+import { menuImages, optionImages, proteinImages } from "@/lib/menu-images";
 import type { MenuCategory, MenuItemDTO } from "@/lib/menu";
 
 type Props = {
@@ -25,17 +26,33 @@ const PROTEIN_META: Record<string, { blurb: string; hue: string }> = {
 };
 
 const BASES = [
-  { name: "Rice & Peas", priceDeltaCents: 0 },
-  { name: "Jerk Chicken Fried Rice", priceDeltaCents: 0 },
-  { name: "Rasta Pasta", priceDeltaCents: 200 },
-  { name: "Mac & Cheese", priceDeltaCents: 150 },
+  {
+    name: "Rice & Peas",
+    priceDeltaCents: 0,
+    blurb: copy.included,
+  },
+  {
+    name: "Jerk Chicken Fried Rice",
+    priceDeltaCents: 0,
+    blurb: copy.included,
+  },
+  {
+    name: "Rasta Pasta",
+    priceDeltaCents: 200,
+    blurb: copy.upgradeRasta,
+  },
+  {
+    name: "Mac & Cheese",
+    priceDeltaCents: 150,
+    blurb: copy.upgradeMac,
+  },
 ];
 
 const SIDE_OPTIONS = [
-  { name: "Jamaican Coleslaw", priceDeltaCents: 0 },
-  { name: "Plantains", priceDeltaCents: 0 },
-  { name: "Rice & Peas", priceDeltaCents: 0 },
-  { name: "Rasta Pasta", priceDeltaCents: 200 },
+  { name: "Jamaican Coleslaw", priceDeltaCents: 0, blurb: copy.freshDaily },
+  { name: "Plantains", priceDeltaCents: 0, blurb: copy.freshDaily },
+  { name: "Rice & Peas", priceDeltaCents: 0, blurb: copy.included },
+  { name: "Rasta Pasta", priceDeltaCents: 200, blurb: copy.upgradeRasta },
 ];
 
 type Addon = {
@@ -44,11 +61,41 @@ type Addon = {
   priceDeltaCents: number;
   menuItemId?: string;
   group?: string;
+  imageUrl?: string | null;
 };
 
 function displayProteinName(name: string) {
   if (name === "BBQ Fried Chicken") return "Barbecue Fried Chicken";
   return name;
+}
+
+function FoodThumb({
+  src,
+  alt,
+  hue,
+  on,
+}: {
+  src?: string | null;
+  alt: string;
+  hue?: string;
+  on?: boolean;
+}) {
+  return (
+    <span
+      className={`relative h-11 w-11 shrink-0 overflow-hidden rounded-full shadow-glass ring-2 ${
+        on ? "ring-fusion-gold" : "ring-white/10"
+      }`}
+      style={{ background: hue || "#3f3f46" }}
+    >
+      {src ? (
+        <Image src={src} alt={alt} fill className="object-cover" sizes="44px" />
+      ) : (
+        <span
+          className={`absolute inset-0 m-auto h-3 w-3 rounded-full ${on ? "bg-white" : "bg-white/35"}`}
+        />
+      )}
+    </span>
+  );
 }
 
 function ToggleRow({
@@ -58,6 +105,8 @@ function ToggleRow({
   on,
   disabled,
   hue,
+  imageUrl,
+  badge,
   onToggle,
 }: {
   label: string;
@@ -66,6 +115,8 @@ function ToggleRow({
   on: boolean;
   disabled?: boolean;
   hue?: string;
+  imageUrl?: string | null;
+  badge?: string;
   onToggle: () => void;
 }) {
   return (
@@ -79,20 +130,23 @@ function ToggleRow({
           : "border-transparent hover:bg-white/5"
       } ${disabled && !on ? "opacity-40" : ""}`}
     >
-      <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-glass"
-        style={{ background: hue || "#3f3f46" }}
-        aria-hidden
-      >
-        <span
-          className={`h-3 w-3 rounded-full ${on ? "bg-white" : "bg-white/35"}`}
-        />
-      </span>
+      <FoodThumb src={imageUrl} alt={label} hue={hue} on={on} />
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-white">{label}</span>
-        <span className="block text-xs text-fusion-muted">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-white">{label}</span>
+          {badge && (
+            <span className="rounded-full bg-fusion-gold/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-fusion-gold">
+              {badge}
+            </span>
+          )}
+        </span>
+        <span className="mt-0.5 block text-xs text-fusion-muted">
           {blurb || ""}
-          {typeof price === "number" && price > 0 ? ` · +${formatMoney(price)}` : ""}
+          {typeof price === "number" && price > 0 ? (
+            <span className="font-semibold text-fusion-gold">
+              {blurb ? " · " : ""}+{formatMoney(price)}
+            </span>
+          ) : null}
         </span>
       </span>
       <span
@@ -138,6 +192,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
         priceDeltaCents: e.priceCents,
         menuItemId: e.id,
         group: "Empanadas",
+        imageUrl: e.imageUrl || menuImages.empanadas,
       });
     }
     if (wingItem) {
@@ -148,6 +203,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
           priceDeltaCents: wingItem.priceCents,
           menuItemId: wingItem.id,
           group: "Wings",
+          imageUrl: wingItem.imageUrl || menuImages.wings,
         });
       }
     }
@@ -158,6 +214,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
         priceDeltaCents: d.priceCents,
         menuItemId: d.id,
         group: "Drinks",
+        imageUrl: d.imageUrl || menuImages.fruitPunch,
       });
     }
     return list;
@@ -295,6 +352,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
                 label={displayProteinName(name)}
                 blurb={meta?.blurb}
                 hue={meta?.hue}
+                imageUrl={proteinImages[name] || proteinImages[displayProteinName(name)]}
                 on={on}
                 onToggle={() => toggleProtein(name)}
               />
@@ -318,9 +376,11 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
             <ToggleRow
               key={opt.name}
               label={opt.name}
-              blurb={copy.freshDaily}
+              blurb={opt.blurb}
               price={opt.priceDeltaCents}
               hue="#166534"
+              imageUrl={optionImages[opt.name]}
+              badge={opt.priceDeltaCents > 0 ? copy.upgrade : undefined}
               on={sides.includes(opt.name)}
               onToggle={() => toggleSide(opt.name)}
             />
@@ -338,9 +398,11 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
             <ToggleRow
               key={a.key}
               label={a.name}
-              blurb={a.group}
+              blurb={copy.addOnPairing}
               price={a.priceDeltaCents}
               hue={a.group === "Drinks" ? "#b45309" : a.group === "Wings" ? "#dc2626" : "#854d0e"}
+              imageUrl={a.imageUrl}
+              badge={copy.popularUpgrade}
               on={addons.includes(a.key)}
               onToggle={() => toggleAddon(a.key)}
             />
@@ -388,8 +450,15 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
                     : "border-white/10 bg-black/30 hover:border-fusion-amber/30"
                 }`}
               >
-                <div className="font-display text-sm font-bold uppercase tracking-wide">
-                  {n === 1 ? copy.oneProtein : copy.twoProteins}
+                <div className="flex items-center gap-2">
+                  <div className="font-display text-sm font-bold uppercase tracking-wide">
+                    {n === 1 ? copy.oneProtein : copy.twoProteins}
+                  </div>
+                  {n === 2 && (
+                    <span className="rounded-full bg-fusion-gold/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fusion-gold">
+                      {copy.popularUpgrade}
+                    </span>
+                  )}
                 </div>
                 <div className="mt-1 font-display text-2xl text-fusion-gold">
                   {formatMoney(n === 1 ? oneProtein.priceCents : twoProtein.priceCents)}
@@ -414,6 +483,8 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
               {proteinOptions.map((name) => {
                 const on = proteins.includes(name);
                 const meta = PROTEIN_META[name];
+                const img =
+                  proteinImages[name] || proteinImages[displayProteinName(name)];
                 return (
                   <button
                     key={`left-${name}`}
@@ -425,15 +496,7 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
                         : "border-white/10 bg-black/25 hover:border-fusion-amber/30"
                     }`}
                   >
-                    <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                      style={{ background: meta?.hue || "#3f3f46" }}
-                      aria-hidden
-                    >
-                      <span
-                        className={`h-2.5 w-2.5 rounded-full ${on ? "bg-white" : "bg-white/35"}`}
-                      />
-                    </span>
+                    <FoodThumb src={img} alt={displayProteinName(name)} hue={meta?.hue} on={on} />
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold text-white">
                         {displayProteinName(name)}
@@ -461,25 +524,52 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-fusion-muted">
               {copy.selectBase}
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {BASES.map((b) => (
-                <button
-                  key={b.name}
-                  type="button"
-                  onClick={() => {
-                    setBase(b.name);
-                    bumpBowl();
-                  }}
-                  className={`rounded-full px-3 py-2 text-xs font-semibold transition active:scale-[0.97] ${
-                    base === b.name
-                      ? "bg-fusion-gold text-fusion-void"
-                      : "bg-white/5 text-fusion-muted hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  {b.name}
-                  {b.priceDeltaCents > 0 ? ` +${formatMoney(b.priceDeltaCents)}` : ""}
-                </button>
-              ))}
+            <p className="mt-1 text-xs text-fusion-muted">{copy.baseHint}</p>
+            <div className="mt-3 grid grid-cols-1 gap-2">
+              {BASES.map((b) => {
+                const on = base === b.name;
+                return (
+                  <button
+                    key={b.name}
+                    type="button"
+                    onClick={() => {
+                      setBase(b.name);
+                      bumpBowl();
+                    }}
+                    className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition active:scale-[0.97] ${
+                      on
+                        ? "border-fusion-gold bg-fusion-gold/10"
+                        : "border-white/10 bg-black/20 hover:border-fusion-amber/30"
+                    }`}
+                  >
+                    <FoodThumb
+                      src={optionImages[b.name]}
+                      alt={b.name}
+                      hue="#854d0e"
+                      on={on}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-white">{b.name}</span>
+                        {b.priceDeltaCents > 0 && (
+                          <span className="rounded-full bg-fusion-gold/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-fusion-gold">
+                            {copy.upgrade}
+                          </span>
+                        )}
+                      </span>
+                      <span className="block text-[11px] text-fusion-muted">
+                        {b.blurb}
+                        {b.priceDeltaCents > 0 ? (
+                          <span className="font-semibold text-fusion-gold">
+                            {" "}
+                            · +{formatMoney(b.priceDeltaCents)}
+                          </span>
+                        ) : null}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -534,7 +624,12 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
                 <div className="absolute inset-0 rounded-full border border-fusion-amber/30 bg-gradient-to-b from-zinc-800 to-black shadow-[inset_0_0_60px_rgba(0,0,0,0.65)]" />
                 <div className="absolute inset-6 overflow-hidden rounded-full border border-white/10">
                   <Image
-                    src="/images/menu-flyer.jpg"
+                    src={
+                      (proteins[0] &&
+                        (proteinImages[proteins[0]] ||
+                          proteinImages[displayProteinName(proteins[0])])) ||
+                      menuImages.fusionBowl
+                    }
                     alt="Fusion bowl preview"
                     fill
                     className="object-cover object-center opacity-90"

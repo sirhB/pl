@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { cuid, getDb, nowIso, replaceDb, saveDb } from "./db";
 import { emptyDatabase, type Database, type InventoryItem, type MenuItem } from "./types";
+import { itemImageBySlug } from "../menu-images";
 
 function upsertBy<T extends { id: string }>(
   list: T[],
@@ -148,6 +149,7 @@ export async function seedDatabase(force = false) {
       tags?: string[];
       isBuildYourOwn?: boolean;
       prepMinutes?: number;
+      imageUrl?: string | null;
     }
   ): MenuItem {
     const row: MenuItem = {
@@ -158,7 +160,7 @@ export async function seedDatabase(force = false) {
       description: data.description || null,
       priceCents: data.priceCents,
       costCents: data.costCents ?? Math.round(data.priceCents * 0.35),
-      imageUrl: null,
+      imageUrl: data.imageUrl ?? itemImageBySlug[data.slug] ?? null,
       isActive: true,
       isBuildYourOwn: data.isBuildYourOwn ?? false,
       allowsModifiers: true,

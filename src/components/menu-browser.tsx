@@ -1,14 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { formatMoney } from "@/lib/utils";
 import { useCart } from "@/contexts/cart-context";
 import { copy } from "@/lib/copy";
+import { itemImageBySlug, menuImages, optionImages } from "@/lib/menu-images";
 import type { MenuCategory, MenuItemDTO } from "@/lib/menu";
 
 type Props = {
   categories: MenuCategory[];
 };
+
+function itemPhoto(item: MenuItemDTO) {
+  return item.imageUrl || itemImageBySlug[item.slug] || menuImages.fusionBowl;
+}
 
 export function MenuBrowser({ categories }: Props) {
   const cart = useCart();
@@ -141,39 +147,49 @@ export function MenuBrowser({ categories }: Props) {
             .map((item) => (
               <article
                 key={item.id}
-                className="glass-panel flex flex-col justify-between rounded-[22px] p-5 transition hover:border-fusion-amber/40"
+                className="glass-panel overflow-hidden rounded-[22px] transition hover:border-fusion-amber/40"
               >
-                <div>
-                  <div className="flex items-start justify-between gap-3">
+                <div className="relative aspect-[16/10] w-full">
+                  <Image
+                    src={itemPhoto(item)}
+                    alt={item.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, 50vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-fusion-void/90 via-transparent to-transparent" />
+                  <span className="absolute bottom-3 right-3 rounded-full bg-fusion-gold/90 px-3 py-1 text-sm font-bold text-fusion-void">
+                    {formatMoney(item.priceCents)}
+                  </span>
+                </div>
+                <div className="flex flex-col justify-between p-5 pt-4">
+                  <div>
                     <h3 className="font-display text-lg font-bold uppercase tracking-wide text-white">
                       {item.name}
                     </h3>
-                    <span className="shrink-0 rounded-full bg-fusion-gold/15 px-3 py-1 text-sm font-bold text-fusion-gold">
-                      {formatMoney(item.priceCents)}
-                    </span>
+                    {item.description && (
+                      <p className="mt-2 text-sm leading-relaxed text-fusion-muted">
+                        {item.description}
+                      </p>
+                    )}
+                    {item.modifierGroups.length > 0 && (
+                      <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-fusion-emerald">
+                        {copy.customizable}
+                      </p>
+                    )}
                   </div>
-                  {item.description && (
-                    <p className="mt-2 text-sm leading-relaxed text-fusion-muted">
-                      {item.description}
-                    </p>
-                  )}
-                  {item.modifierGroups.length > 0 && (
-                    <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-fusion-emerald">
-                      {copy.customizable}
-                    </p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => openCustomize(item)}
+                    className="mt-5 rounded-full border border-fusion-line/50 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-fusion-gold hover:bg-fusion-gold hover:text-fusion-void"
+                  >
+                    {flashId === item.id
+                      ? copy.added
+                      : item.modifierGroups.length
+                        ? copy.customize
+                        : copy.addToCart}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => openCustomize(item)}
-                  className="mt-5 rounded-full border border-fusion-line/50 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-fusion-gold hover:bg-fusion-gold hover:text-fusion-void"
-                >
-                  {flashId === item.id
-                    ? copy.added
-                    : item.modifierGroups.length
-                      ? copy.customize
-                      : copy.addToCart}
-                </button>
               </article>
             ))}
         </div>
@@ -182,6 +198,16 @@ export function MenuBrowser({ categories }: Props) {
       {customizing && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 backdrop-blur-sm sm:items-center sm:p-6">
           <div className="glass-panel max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[28px] p-6 shadow-glass animate-fade-up">
+            <div className="relative mb-5 aspect-[16/9] overflow-hidden rounded-[20px]">
+              <Image
+                src={itemPhoto(customizing)}
+                alt={customizing.name}
+                fill
+                className="object-cover"
+                sizes="512px"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            </div>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-brush text-fusion-amber">{copy.makeItYours}</p>
@@ -216,6 +242,15 @@ export function MenuBrowser({ categories }: Props) {
                     <ul className="space-y-2">
                       {g.options.map((o) => {
                         const on = (selectedMods[g.id] || []).includes(o.name);
+                        const thumb =
+                          optionImages[o.name] ||
+                          (o.name.includes("Plantain")
+                            ? menuImages.plantains
+                            : o.name.includes("Mac")
+                              ? menuImages.rastaPasta
+                              : o.name.includes("Jerk") || o.name.includes("Extra")
+                                ? menuImages.jerkChicken
+                                : null);
                         return (
                           <li key={o.id}>
                             <button
@@ -223,16 +258,34 @@ export function MenuBrowser({ categories }: Props) {
                               onClick={() =>
                                 toggleMod(g.id, o.name, g.maxSelect, g.minSelect)
                               }
-                              className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition active:scale-[0.97] ${
+                              className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition active:scale-[0.97] ${
                                 on
                                   ? "border-fusion-emerald/40 bg-fusion-green/15"
                                   : "border-white/10 hover:bg-white/5"
                               }`}
                             >
-                              <span>
-                                <span className="block font-semibold text-white">{o.name}</span>
+                              {thumb && (
+                                <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full">
+                                  <Image
+                                    src={thumb}
+                                    alt=""
+                                    fill
+                                    className="object-cover"
+                                    sizes="40px"
+                                  />
+                                </span>
+                              )}
+                              <span className="min-w-0 flex-1">
+                                <span className="flex flex-wrap items-center gap-2">
+                                  <span className="font-semibold text-white">{o.name}</span>
+                                  {o.priceDeltaCents > 0 && (
+                                    <span className="rounded-full bg-fusion-gold/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-fusion-gold">
+                                      {copy.upgrade}
+                                    </span>
+                                  )}
+                                </span>
                                 {o.priceDeltaCents !== 0 && (
-                                  <span className="text-xs text-fusion-gold">
+                                  <span className="text-xs font-semibold text-fusion-gold">
                                     {o.priceDeltaCents > 0 ? "+" : ""}
                                     {formatMoney(o.priceDeltaCents)}
                                   </span>

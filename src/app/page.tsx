@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { copy } from "@/lib/copy";
+import { menuImages } from "@/lib/menu-images";
 
 export default function HomePage() {
   return (
@@ -8,13 +9,13 @@ export default function HomePage() {
       <section className="relative mx-auto max-w-7xl px-4 pb-16 pt-8">
         <div className="relative min-h-[82vh] overflow-hidden rounded-[32px] border border-fusion-line/30 shadow-glass">
           <Image
-            src="/images/menu-flyer.jpg"
+            src={menuImages.hero}
             alt="Prime Fusion Jamaican fusion bowls"
             fill
             priority
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-fusion-void via-fusion-void/85 to-fusion-void/25" />
+          <div className="absolute inset-0 bg-gradient-to-r from-fusion-void via-fusion-void/85 to-fusion-void/30" />
           <div className="relative flex min-h-[82vh] flex-col justify-end p-8 sm:justify-center sm:p-12">
             <div className="max-w-xl animate-fade-up">
               <div className="mb-3 flex items-center gap-2 text-fusion-gold">
@@ -50,6 +51,35 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          {[
+            { src: menuImages.jerkChicken, label: "Jerk Chicken" },
+            { src: menuImages.oxtails, label: "Oxtails" },
+            { src: menuImages.wings, label: "Wings" },
+            { src: menuImages.rastaPasta, label: "Rasta Pasta" },
+            { src: menuImages.empanadas, label: "Empanadas" },
+            { src: menuImages.fruitPunch, label: "Fruit Punch" },
+          ].map((tile) => (
+            <Link
+              key={tile.label}
+              href="/order"
+              className="group relative aspect-[4/3] overflow-hidden rounded-[22px] border border-fusion-line/30"
+            >
+              <Image
+                src={tile.src}
+                alt={tile.label}
+                fill
+                className="object-cover transition duration-500 group-hover:scale-105"
+                sizes="(max-width: 640px) 100vw, 33vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <span className="absolute bottom-3 left-3 font-display text-sm font-bold uppercase tracking-wide text-white">
+                {tile.label}
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
     </div>

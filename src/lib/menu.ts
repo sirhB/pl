@@ -57,6 +57,7 @@ export async function getFullMenu() {
           slug: item.slug,
           description: item.description,
           priceCents: item.priceCents,
+          imageUrl: item.imageUrl || null,
           isBuildYourOwn: item.isBuildYourOwn,
           prepMinutes: item.prepMinutes,
           tags: safeTags(item.tags),
