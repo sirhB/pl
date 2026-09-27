@@ -183,11 +183,13 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
 
   function toggleProtein(name: string) {
     setProteins((prev) => {
+      // Deselect if already chosen
       if (prev.includes(name)) {
-        if (prev.length <= 1) return prev;
         return prev.filter((p) => p !== name);
       }
+      // 1-protein bowl: radio behavior — always swap to the new choice
       if (tier === 1) return [name];
+      // 2-protein bowl: fill slots, then replace the oldest
       if (prev.length >= 2) return [...prev.slice(1), name];
       return [...prev, name];
     });
@@ -211,8 +213,6 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
   }
-
-  const proteinCapReached = proteins.length >= tier;
 
   function addToOrder() {
     if (proteins.length !== tier || sides.length < 1) return;
@@ -271,6 +271,11 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
             {proteins.length}/{tier}
           </span>
         </div>
+        <p className="mb-2 text-xs text-fusion-muted">
+          {tier === 1
+            ? "Tap a protein to select it — tap again to clear."
+            : "Pick up to 2. Tap another to swap when full."}
+        </p>
         <div className="space-y-1.5">
           {proteinOptions.map((name) => {
             const on = proteins.includes(name);
@@ -283,7 +288,6 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
                 hue={meta?.hue}
                 short={meta?.short}
                 on={on}
-                disabled={proteinCapReached}
                 onToggle={() => toggleProtein(name)}
               />
             );
@@ -384,6 +388,62 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
           </div>
 
           <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-fusion-gold">
+                Choose protein{tier > 1 ? "s" : ""}
+              </p>
+              <span className="rounded-full bg-fusion-red/20 px-2.5 py-0.5 text-[11px] font-bold text-fusion-red-hot">
+                {proteins.length}/{tier}
+              </span>
+            </div>
+            <p className="mb-3 text-xs text-fusion-muted">
+              {tier === 1
+                ? "Select one — tap another to switch."
+                : "Select two — tap to add or remove."}
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              {proteinOptions.map((name) => {
+                const on = proteins.includes(name);
+                const meta = PROTEIN_META[name];
+                return (
+                  <button
+                    key={`left-${name}`}
+                    type="button"
+                    onClick={() => toggleProtein(name)}
+                    className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition active:scale-[0.97] ${
+                      on
+                        ? "border-fusion-gold bg-fusion-gold/10 shadow-glow-gold"
+                        : "border-white/10 bg-black/25 hover:border-fusion-amber/30"
+                    }`}
+                  >
+                    <span
+                      className="flex h-10 w-10 items-center justify-center rounded-full text-[10px] font-extrabold text-white"
+                      style={{ background: meta?.hue || "#3f3f46" }}
+                    >
+                      {meta?.short || name.slice(0, 2)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-white">{name}</span>
+                      <span className="block text-[11px] text-fusion-muted">
+                        {meta?.blurb || "Prime Fusion"}
+                      </span>
+                    </span>
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] ${
+                        on
+                          ? "border-fusion-emerald bg-fusion-green text-white"
+                          : "border-white/20 text-transparent"
+                      }`}
+                    >
+                      ✓
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-6">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-fusion-muted">
               Select base
             </p>
@@ -433,10 +493,16 @@ export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
               disabled={proteins.length !== tier}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-fusion-green px-5 py-4 text-sm font-bold uppercase tracking-wide text-white shadow-glow transition hover:bg-fusion-emerald disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {addedFlash ? "Added ✓" : "Add to Order"}
-              <span className="rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold normal-case tracking-normal">
-                ~{activeItem.prepMinutes} min pickup
-              </span>
+              {addedFlash
+                ? "Added ✓"
+                : proteins.length !== tier
+                  ? `Pick ${tier - proteins.length} more protein${tier - proteins.length === 1 ? "" : "s"}`
+                  : "Add to Order"}
+              {proteins.length === tier && (
+                <span className="rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold normal-case tracking-normal">
+                  ~{activeItem.prepMinutes} min pickup
+                </span>
+              )}
             </button>
           </div>
         </aside>
