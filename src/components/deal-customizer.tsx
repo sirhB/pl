@@ -244,7 +244,7 @@ export function DealCustomizer({ item, onClose, onConfirm }: Props) {
           Choose this item, then add any extras for it before continuing.
         </p>
 
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-4 max-h-48 space-y-2 overflow-y-auto pr-1 sm:max-h-56">
           {step.pick.options.map((o) => {
             const on = pickSelected.includes(o.name);
             const thumb = optionThumb(o.name);
@@ -253,18 +253,18 @@ export function DealCustomizer({ item, onClose, onConfirm }: Props) {
                 <button
                   type="button"
                   onClick={() => toggleMod(step.pick, o.name)}
-                  className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition active:scale-[0.97] ${
+                  className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition active:scale-[0.97] ${
                     on
                       ? "border-fusion-gold bg-fusion-gold/10"
                       : "border-white/10 hover:bg-white/5"
                   }`}
                 >
                   {thumb && (
-                    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full">
-                      <Image src={thumb} alt="" fill className="object-cover" sizes="40px" />
+                    <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full">
+                      <Image src={thumb} alt="" fill className="object-cover" sizes="36px" />
                     </span>
                   )}
-                  <span className="flex-1 font-semibold text-white">{o.name}</span>
+                  <span className="flex-1 text-sm font-semibold text-white">{o.name}</span>
                   <span
                     className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] ${
                       on
@@ -281,14 +281,14 @@ export function DealCustomizer({ item, onClose, onConfirm }: Props) {
         </ul>
 
         {step.extras && (
-          <div className="mt-6">
+          <div className="mt-5 rounded-2xl border border-fusion-emerald/25 bg-fusion-green/5 p-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-fusion-emerald">
               Extras & swaps
             </p>
             <p className="mt-1 text-xs text-fusion-muted">
-              Applied only to this {step.pick.name.toLowerCase()}.
+              Applied only to this {step.pick.name.toLowerCase()} — not the rest of the deal.
             </p>
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-3 max-h-40 space-y-2 overflow-y-auto pr-1">
               {step.extras.options.map((o) => {
                 const on = extrasSelected.includes(o.name);
                 const thumb = optionThumb(o.name);
@@ -297,20 +297,20 @@ export function DealCustomizer({ item, onClose, onConfirm }: Props) {
                     <button
                       type="button"
                       onClick={() => toggleMod(step.extras!, o.name)}
-                      className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition active:scale-[0.97] ${
+                      className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition active:scale-[0.97] ${
                         on
                           ? "border-fusion-emerald/40 bg-fusion-green/15"
-                          : "border-white/10 hover:bg-white/5"
+                          : "border-white/10 bg-black/20 hover:bg-white/5"
                       }`}
                     >
                       {thumb && (
-                        <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full">
-                          <Image src={thumb} alt="" fill className="object-cover" sizes="40px" />
+                        <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full">
+                          <Image src={thumb} alt="" fill className="object-cover" sizes="36px" />
                         </span>
                       )}
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-white">{o.name}</span>
+                          <span className="text-sm font-semibold text-white">{o.name}</span>
                           {o.priceDeltaCents > 0 && (
                             <span className="rounded-full bg-fusion-gold/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-fusion-gold">
                               {copy.upgrade}
