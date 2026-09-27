@@ -766,14 +766,25 @@ export async function seedDatabase(force = false) {
   console.log("Kitchen: kitchen@primefusion.com / kitchen-2024");
 }
 
+let seedPromise: Promise<void> | null = null;
+
 /** Ensure seed exists when the app boots in API routes. */
 export async function ensureSeeded() {
   const db = getDb();
-  if (db.menuItems.length === 0 || !db.users.some((u) => u.role === "ADMIN")) {
-    await seedDatabase(true);
-  } else {
-    saveDb(false);
+  if (db.menuItems.length > 0 && db.users.some((u) => u.role === "ADMIN")) {
+    return;
   }
+  if (!seedPromise) {
+    seedPromise = seedDatabase(true)
+      .catch((err) => {
+        console.error("[seed] failed", err);
+        throw err;
+      })
+      .finally(() => {
+        seedPromise = null;
+      });
+  }
+  await seedPromise;
 }
 
 // silence unused helper in case tree-shaken tooling complains in some builds

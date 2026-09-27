@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BowlBuilder } from "@/components/bowl-builder";
 import { MenuBrowser } from "@/components/menu-browser";
@@ -16,35 +16,46 @@ export default function OrderPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     const station = search.get("station");
-    async function load() {
-      try {
-        const [menuRes, stationRes] = await Promise.all([
-          fetch("/api/menu"),
-          station ? fetch(`/api/stations/${station}`) : Promise.resolve(null),
-        ]);
-        if (!menuRes.ok) throw new Error("Failed to load menu");
-        const menuData = await menuRes.json();
-        setMenu(menuData.categories || []);
-
-        if (stationRes && stationRes.ok) {
-          const s = await stationRes.json();
-          cart.setQrStationCode(s.code);
-          cart.setOrderType(s.orderType === "DINE_IN" ? "DINE_IN" : "TOGO");
-          setStationLabel(s.label);
-        } else if (station) {
-          cart.setQrStationCode(station);
-        }
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not load menu");
-      } finally {
-        setLoading(false);
+    setLoading(true);
+    setError(null);
+    try {
+      const [menuRes, stationRes] = await Promise.all([
+        fetch("/api/menu", { cache: "no-store" }),
+        station
+          ? fetch(`/api/stations/${station}`, { cache: "no-store" })
+          : Promise.resolve(null),
+      ]);
+      const menuData = await menuRes.json().catch(() => ({}));
+      if (!menuRes.ok) {
+        throw new Error(menuData.error || `Failed to load menu (${menuRes.status})`);
       }
+      if (!Array.isArray(menuData.categories) || menuData.categories.length === 0) {
+        throw new Error("Menu returned empty — try seeding with npm run db:setup");
+      }
+      setMenu(menuData.categories);
+
+      if (stationRes && stationRes.ok) {
+        const s = await stationRes.json();
+        cart.setQrStationCode(s.code);
+        cart.setOrderType(s.orderType === "DINE_IN" ? "DINE_IN" : "TOGO");
+        setStationLabel(s.label);
+      } else if (station) {
+        cart.setQrStationCode(station);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load menu");
+      setMenu([]);
+    } finally {
+      setLoading(false);
     }
-    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const byo = menu.find((c) => c.slug === "build-your-bowl");
   const one = byo?.items.find((i) => i.slug === "fusion-bowl-1-protein");
@@ -84,11 +95,38 @@ export default function OrderPageClient() {
           Loading your fusion menu…
         </p>
       )}
-      {error && <p className="text-fusion-red">{error}</p>}
+
+      {error && (
+        <div className="rounded-[24px] border border-red-200 bg-white p-6 shadow-card">
+          <p className="font-semibold text-fusion-red">Couldn’t load the menu</p>
+          <p className="mt-1 text-sm text-fusion-muted">{error}</p>
+          <button
+            type="button"
+            onClick={() => load()}
+            className="mt-4 rounded-full bg-fusion-ink px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       {!loading && !error && one && two && (
         <div className="space-y-10">
           <BowlBuilder oneProtein={one} twoProtein={two} />
+          <MenuBrowser categories={menu} />
+        </div>
+      )}
+
+      {!loading && !error && menu.length > 0 && (!one || !two) && (
+        <div className="space-y-6">
+          <div className="rounded-[24px] bg-white p-6 shadow-card">
+            <p className="font-semibold text-fusion-ink">Bowl builder unavailable</p>
+            <p className="mt-1 text-sm text-fusion-muted">
+              Build-your-bowl items are missing from the seeded menu. Showing the full menu
+              instead — run <code className="rounded bg-fusion-mist px-1">npm run db:setup</code>{" "}
+              to restore the builder.
+            </p>
+          </div>
           <MenuBrowser categories={menu} />
         </div>
       )}

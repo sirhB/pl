@@ -1,5 +1,14 @@
 import { getDb } from "./db";
 
+function safeTags(tags: string): string[] {
+  try {
+    const parsed = JSON.parse(tags || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function getFullMenu() {
   const db = getDb();
   const categories = [...db.categories]
@@ -50,7 +59,7 @@ export async function getFullMenu() {
           priceCents: item.priceCents,
           isBuildYourOwn: item.isBuildYourOwn,
           prepMinutes: item.prepMinutes,
-          tags: JSON.parse(item.tags || "[]") as string[],
+          tags: safeTags(item.tags),
           modifierGroups,
         };
       });
