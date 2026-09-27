@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatMoney } from "@/lib/utils";
+import { copy } from "@/lib/copy";
 
 export default function RewardsPage() {
   const [phone, setPhone] = useState("");
@@ -29,13 +30,9 @@ export default function RewardsPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-12">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-fusion-gold">
-        Loyalty
-      </p>
-      <h1 className="font-display text-4xl text-white">Prime Rewards</h1>
-      <p className="mt-2 text-fusion-muted">
-        Earn 1 point per dollar. Redeem 100 points for $5 off.
-      </p>
+      <p className="font-brush text-lg text-fusion-amber">{copy.brandTag}</p>
+      <h1 className="font-display text-4xl text-white">{copy.rewardsTitle}</h1>
+      <p className="mt-2 text-fusion-muted">{copy.rewardsSub}</p>
       <form onSubmit={lookup} className="mt-6 flex gap-2">
         <input
           value={phone}
@@ -44,7 +41,7 @@ export default function RewardsPage() {
           className="flex-1 rounded-lg border border-white/10 bg-black/50 px-3 py-3"
         />
         <button className="rounded-lg bg-fusion-yellow px-4 font-bold text-fusion-black">
-          Check
+          Check balance
         </button>
       </form>
       {error && <p className="mt-3 text-fusion-red">{error}</p>}
@@ -81,7 +78,7 @@ export default function RewardsPage() {
             </>
           ) : (
             <p className="text-fusion-muted">
-              No account yet — points are created automatically on your first paid order.
+              No account yet — points land automatically with your first paid order.
             </p>
           )}
         </div>

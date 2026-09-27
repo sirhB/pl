@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BowlBuilder } from "@/components/bowl-builder";
 import { MenuBrowser } from "@/components/menu-browser";
 import { CartDock } from "@/components/cart-dock";
 import { useCart } from "@/contexts/cart-context";
+import { copy } from "@/lib/copy";
 import type { MenuCategory } from "@/lib/menu";
 
 export default function OrderPageClient() {
@@ -16,82 +17,104 @@ export default function OrderPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     const station = search.get("station");
-    async function load() {
-      try {
-        const [menuRes, stationRes] = await Promise.all([
-          fetch("/api/menu"),
-          station ? fetch(`/api/stations/${station}`) : Promise.resolve(null),
-        ]);
-        if (!menuRes.ok) throw new Error("Failed to load menu");
-        const menuData = await menuRes.json();
-        setMenu(menuData.categories || []);
-
-        if (stationRes && stationRes.ok) {
-          const s = await stationRes.json();
-          cart.setQrStationCode(s.code);
-          cart.setOrderType(s.orderType === "DINE_IN" ? "DINE_IN" : "TOGO");
-          setStationLabel(s.label);
-        } else if (station) {
-          cart.setQrStationCode(station);
-        }
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not load menu");
-      } finally {
-        setLoading(false);
+    setLoading(true);
+    setError(null);
+    try {
+      const [menuRes, stationRes] = await Promise.all([
+        fetch("/api/menu", { cache: "no-store" }),
+        station
+          ? fetch(`/api/stations/${station}`, { cache: "no-store" })
+          : Promise.resolve(null),
+      ]);
+      const menuData = await menuRes.json().catch(() => ({}));
+      if (!menuRes.ok) {
+        throw new Error(menuData.error || `Failed to load menu (${menuRes.status})`);
       }
+      if (!Array.isArray(menuData.categories) || menuData.categories.length === 0) {
+        throw new Error("Menu returned empty — try seeding with npm run db:setup");
+      }
+      setMenu(menuData.categories);
+
+      // Takeout only — no dine in
+      cart.setOrderType("TOGO");
+      if (stationRes && stationRes.ok) {
+        const s = await stationRes.json();
+        cart.setQrStationCode(s.code);
+        setStationLabel(s.label);
+      } else if (station) {
+        cart.setQrStationCode(station);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load menu");
+      setMenu([]);
+    } finally {
+      setLoading(false);
     }
-    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    cart.setOrderType("TOGO");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const byo = menu.find((c) => c.slug === "build-your-bowl");
   const one = byo?.items.find((i) => i.slug === "fusion-bowl-1-protein");
   const two = byo?.items.find((i) => i.slug === "fusion-bowl-2-protein");
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 pb-28">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-fusion-gold">
-            Interactive ordering
+    <div className="mx-auto max-w-7xl px-4 py-6 pb-32">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        {stationLabel ? (
+          <p className="inline-flex items-center gap-2 rounded-full border border-fusion-emerald/30 bg-fusion-emerald/10 px-4 py-2 text-sm font-medium text-fusion-emerald">
+            <span className="h-2 w-2 rounded-full bg-fusion-emerald" />
+            {copy.stationReady} {stationLabel}
           </p>
-          <h1 className="font-display text-4xl text-white sm:text-5xl">Place your order</h1>
-          {stationLabel && (
-            <p className="mt-2 inline-flex rounded-full border border-fusion-green/40 bg-fusion-green/15 px-3 py-1 text-sm text-white">
-              QR station · {stationLabel} · {cart.orderType === "DINE_IN" ? "Dine in" : "To-go"}
-            </p>
-          )}
-        </div>
-        <div className="flex rounded-lg border border-white/10 bg-black/40 p-1">
-          {(["TOGO", "DINE_IN"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => cart.setOrderType(t)}
-              className={`rounded-md px-4 py-2 text-sm font-semibold ${
-                cart.orderType === t
-                  ? "bg-fusion-yellow text-fusion-black"
-                  : "text-fusion-muted hover:text-white"
-              }`}
-            >
-              {t === "TOGO" ? "To-go" : "Dine in"}
-            </button>
-          ))}
-        </div>
+        ) : (
+          <p className="font-brush text-sm text-fusion-amber">{copy.streetLine}</p>
+        )}
+        <p className="rounded-full border border-fusion-line/40 bg-white/5 px-4 py-2 text-sm font-semibold text-fusion-muted">
+          {copy.takeout} · {copy.pickupAtTruck}
+        </p>
       </div>
 
       {loading && (
-        <p className="animate-pulse-soft text-fusion-muted">Loading the fusion menu…</p>
+        <p className="glass-panel rounded-[28px] p-10 text-fusion-muted">
+          {copy.loadingMenu}
+        </p>
       )}
-      {error && <p className="text-fusion-red">{error}</p>}
+
+      {error && (
+        <div className="glass-panel rounded-[28px] border-fusion-red/40 p-6">
+          <p className="font-semibold text-fusion-red-hot">{copy.menuErrorTitle}</p>
+          <p className="mt-1 text-sm text-fusion-muted">{error}</p>
+          <button
+            type="button"
+            onClick={() => load()}
+            className="mt-4 rounded-full bg-fusion-gold px-5 py-2.5 text-sm font-bold text-fusion-void"
+          >
+            {copy.tryAgain}
+          </button>
+        </div>
+      )}
 
       {!loading && !error && one && two && (
         <div className="space-y-12">
-          <BowlBuilder oneProtein={one} twoProtein={two} />
-          <MenuBrowser categories={menu} />
+          <BowlBuilder oneProtein={one} twoProtein={two} menu={menu} />
+          <div id="sides">
+            <MenuBrowser categories={menu} />
+          </div>
         </div>
+      )}
+
+      {!loading && !error && menu.length > 0 && (!one || !two) && (
+        <MenuBrowser categories={menu} />
       )}
 
       <CartDock />

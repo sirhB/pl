@@ -1,64 +1,78 @@
-import { prisma } from "./db";
+import { getDb } from "./db";
+
+function safeTags(tags: string): string[] {
+  try {
+    const parsed = JSON.parse(tags || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 export async function getFullMenu() {
-  const categories = await prisma.category.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: "asc" },
-    include: {
-      items: {
-        where: { isActive: true },
-        orderBy: { sortOrder: "asc" },
-        include: {
-          modifiers: {
-            include: {
-              group: {
-                include: {
-                  options: {
-                    where: { isActive: true },
-                    orderBy: { name: "asc" },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
+  const db = getDb();
+  const categories = [...db.categories]
+    .filter((c) => c.isActive)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  return categories.map((cat) => ({
-    id: cat.id,
-    name: cat.name,
-    slug: cat.slug,
-    description: cat.description,
-    items: cat.items.map((item) => ({
-      id: item.id,
-      name: item.name,
-      slug: item.slug,
-      description: item.description,
-      priceCents: item.priceCents,
-      isBuildYourOwn: item.isBuildYourOwn,
-      prepMinutes: item.prepMinutes,
-      tags: JSON.parse(item.tags || "[]") as string[],
-      modifierGroups: item.modifiers.map((m) => ({
-        id: m.group.id,
-        name: m.group.name,
-        minSelect: m.group.minSelect,
-        maxSelect: item.slug.includes("1-protein")
-          ? Math.min(1, m.group.maxSelect)
-          : item.slug.includes("2-protein") && m.group.name === "Proteins"
-            ? 2
-            : m.group.maxSelect,
-        isRequired: m.group.isRequired,
-        options: m.group.options.map((o) => ({
-          id: o.id,
-          name: o.name,
-          priceDeltaCents: o.priceDeltaCents,
-          isDefault: o.isDefault,
-        })),
-      })),
-    })),
-  }));
+  return categories.map((cat) => {
+    const items = db.menuItems
+      .filter((i) => i.categoryId === cat.id && i.isActive)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((item) => {
+        const groupIds = db.menuItemModifiers
+          .filter((m) => m.menuItemId === item.id)
+          .map((m) => m.groupId);
+        const modifierGroups = groupIds
+          .map((gid) => db.modifierGroups.find((g) => g.id === gid))
+          .filter(Boolean)
+          .map((g) => {
+            const maxSelect =
+              item.slug.includes("1-protein") && g!.name === "Proteins"
+                ? 1
+                : item.slug.includes("2-protein") && g!.name === "Proteins"
+                  ? 2
+                  : g!.maxSelect;
+            return {
+              id: g!.id,
+              name: g!.name,
+              minSelect: g!.minSelect,
+              maxSelect,
+              isRequired: g!.isRequired,
+              options: db.modifierOptions
+                .filter((o) => o.groupId === g!.id && o.isActive)
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((o) => ({
+                  id: o.id,
+                  name: o.name,
+                  priceDeltaCents: o.priceDeltaCents,
+                  isDefault: o.isDefault,
+                })),
+            };
+          });
+
+        return {
+          id: item.id,
+          name: item.name,
+          slug: item.slug,
+          description: item.description,
+          priceCents: item.priceCents,
+          imageUrl: item.imageUrl || null,
+          isBuildYourOwn: item.isBuildYourOwn,
+          prepMinutes: item.prepMinutes,
+          tags: safeTags(item.tags),
+          modifierGroups,
+        };
+      });
+
+    return {
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      description: cat.description,
+      items,
+    };
+  });
 }
 
 export type MenuCategory = Awaited<ReturnType<typeof getFullMenu>>[number];

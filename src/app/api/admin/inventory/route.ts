@@ -1,57 +1,68 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/db";
+import { getDb, withDb, saveDb, cuid, nowIso } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await getSession();
-  if (!session || (session.role !== "ADMIN" && session.role !== "STAFF")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const items = await prisma.inventoryItem.findMany({
-    orderBy: { name: "asc" },
-    include: { movements: { orderBy: { createdAt: "desc" }, take: 5 } },
+  return withDb(async () => {
+    const session = await getSession();
+    if (!session || (session.role !== "ADMIN" && session.role !== "STAFF")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const db = getDb();
+    const items = [...db.inventoryItems]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((item) => ({
+        ...item,
+        movements: db.inventoryMovements
+          .filter((m) => m.inventoryItemId === item.id)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          .slice(0, 5),
+      }));
+    return NextResponse.json({ items });
   });
-  return NextResponse.json({ items });
 }
 
 export async function PATCH(req: Request) {
-  const session = await getSession();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const body = z
-    .object({
-      id: z.string(),
-      quantityOnHand: z.number().optional(),
-      reorderLevel: z.number().optional(),
-      costPerUnitCents: z.number().int().min(0).optional(),
-      adjustBy: z.number().optional(),
-      reason: z.string().optional(),
-    })
-    .parse(await req.json());
+  return withDb(async () => {
+    const session = await getSession();
+    if (!session || session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const body = z
+      .object({
+        id: z.string(),
+        quantityOnHand: z.number().optional(),
+        reorderLevel: z.number().optional(),
+        costPerUnitCents: z.number().int().min(0).optional(),
+        adjustBy: z.number().optional(),
+        reason: z.string().optional(),
+      })
+      .parse(await req.json());
 
-  if (typeof body.adjustBy === "number") {
-    const item = await prisma.$transaction(async (tx) => {
-      const updated = await tx.inventoryItem.update({
-        where: { id: body.id },
-        data: { quantityOnHand: { increment: body.adjustBy! } },
+    const item = getDb().inventoryItems.find((i) => i.id === body.id);
+    if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    if (typeof body.adjustBy === "number") {
+      item.quantityOnHand += body.adjustBy;
+      getDb().inventoryMovements.push({
+        id: cuid(),
+        inventoryItemId: item.id,
+        delta: body.adjustBy,
+        reason: body.reason || "Manual adjustment",
+        orderId: null,
+        createdAt: nowIso(),
       });
-      await tx.inventoryMovement.create({
-        data: {
-          inventoryItemId: body.id,
-          delta: body.adjustBy!,
-          reason: body.reason || "Manual adjustment",
-        },
-      });
-      return updated;
-    });
+      saveDb(true);
+      return NextResponse.json(item);
+    }
+
+    if (body.quantityOnHand !== undefined) item.quantityOnHand = body.quantityOnHand;
+    if (body.reorderLevel !== undefined) item.reorderLevel = body.reorderLevel;
+    if (body.costPerUnitCents !== undefined) item.costPerUnitCents = body.costPerUnitCents;
+    saveDb(true);
     return NextResponse.json(item);
-  }
-
-  const { id, adjustBy: _a, reason: _r, ...data } = body;
-  const item = await prisma.inventoryItem.update({ where: { id }, data });
-  return NextResponse.json(item);
+  });
 }

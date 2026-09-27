@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { getDb, withDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -7,11 +7,11 @@ export async function GET(
   _req: Request,
   { params }: { params: { code: string } }
 ) {
-  const station = await prisma.qrStation.findUnique({
-    where: { code: params.code },
+  return withDb(async () => {
+    const station = getDb().qrStations.find((s) => s.code === params.code && s.isActive);
+    if (!station) {
+      return NextResponse.json({ error: "Station not found" }, { status: 404 });
+    }
+    return NextResponse.json(station);
   });
-  if (!station || !station.isActive) {
-    return NextResponse.json({ error: "Station not found" }, { status: 404 });
-  }
-  return NextResponse.json(station);
 }

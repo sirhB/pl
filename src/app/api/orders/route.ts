@@ -1,30 +1,41 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/db";
+import { getDb, withDb } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { updateOrderStatus, type OrderStatus } from "@/lib/orders";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const session = await getSession();
-  if (!session || (session.role !== "ADMIN" && session.role !== "STAFF")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  return withDb(async () => {
+    const session = await getSession();
+    if (!session || (session.role !== "ADMIN" && session.role !== "STAFF")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const { searchParams } = new URL(req.url);
-  const board = searchParams.get("board");
-  const statuses = board
-    ? (["PAID", "RECEIVED", "PREPARING", "READY"] as OrderStatus[])
-    : undefined;
+    const { searchParams } = new URL(req.url);
+    const board = searchParams.get("board");
+    const statuses = board
+      ? (["PAID", "RECEIVED", "PREPARING", "READY"] as OrderStatus[])
+      : undefined;
 
-  const orders = await prisma.order.findMany({
-    where: statuses ? { status: { in: statuses } } : undefined,
-    include: { items: true, qrStation: true },
-    orderBy: { createdAt: "desc" },
-    take: 100,
+    const db = getDb();
+    let orders = [...db.orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    if (statuses) {
+      orders = orders.filter((o) => statuses.includes(o.status));
+    }
+    orders = orders.slice(0, 100);
+
+    return NextResponse.json({
+      orders: orders.map((o) => ({
+        ...o,
+        items: db.orderItems.filter((i) => i.orderId === o.id),
+        qrStation: o.qrStationId
+          ? db.qrStations.find((s) => s.id === o.qrStationId) || null
+          : null,
+      })),
+    });
   });
-  return NextResponse.json({ orders });
 }
 
 const patchSchema = z.object({
@@ -39,14 +50,17 @@ const patchSchema = z.object({
     "REFUNDED",
   ]),
   note: z.string().optional(),
+  orderId: z.string(),
 });
 
 export async function PATCH(req: Request) {
-  const session = await getSession();
-  if (!session || (session.role !== "ADMIN" && session.role !== "STAFF")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const body = patchSchema.extend({ orderId: z.string() }).parse(await req.json());
-  const order = await updateOrderStatus(body.orderId, body.status, body.note);
-  return NextResponse.json(order);
+  return withDb(async () => {
+    const session = await getSession();
+    if (!session || (session.role !== "ADMIN" && session.role !== "STAFF")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const body = patchSchema.parse(await req.json());
+    const order = await updateOrderStatus(body.orderId, body.status, body.note);
+    return NextResponse.json(order);
+  });
 }

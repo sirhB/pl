@@ -3,24 +3,29 @@
 import Link from "next/link";
 import { useCart } from "@/contexts/cart-context";
 import { formatMoney } from "@/lib/utils";
+import { copy } from "@/lib/copy";
 
 export function CartDock() {
   const cart = useCart();
   if (cart.itemCount === 0) return null;
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 z-40 px-4">
+    <div className="fixed bottom-5 left-0 right-0 z-40 px-4">
       <Link
         href="/checkout"
-        className="mx-auto flex max-w-lg items-center justify-between gap-3 rounded-2xl bg-fusion-yellow px-5 py-4 text-fusion-black shadow-2xl shadow-black/50 transition hover:bg-white animate-fade-up"
+        className="mx-auto flex max-w-lg items-center justify-between gap-3 rounded-full border border-fusion-amber/30 bg-fusion-gold px-6 py-4 text-fusion-void shadow-glow-gold transition hover:brightness-110 animate-fade-up"
       >
         <div>
-          <div className="text-xs font-bold uppercase tracking-wider opacity-70">
-            {cart.itemCount} item{cart.itemCount === 1 ? "" : "s"} · {cart.orderType === "DINE_IN" ? "Dine in" : "To-go"}
+          <div className="text-[11px] font-bold uppercase tracking-wider opacity-70">
+            {cart.itemCount} item{cart.itemCount === 1 ? "" : "s"} · {copy.takeout}
           </div>
-          <div className="font-display text-xl leading-none">View cart & pay</div>
+          <div className="font-display text-sm font-extrabold uppercase tracking-wide">
+            {copy.viewCart}
+          </div>
         </div>
-        <div className="font-display text-2xl">{formatMoney(cart.subtotalCents)}</div>
+        <div className="rounded-full bg-fusion-void px-4 py-2 font-display text-lg text-fusion-gold">
+          {formatMoney(cart.subtotalCents)}
+        </div>
       </Link>
     </div>
   );

@@ -1,47 +1,43 @@
-import { prisma } from "./db";
+import { getDb, saveDb, cuid, nowIso } from "./db";
 import { normalizePhone } from "./utils";
 
 export async function getOrCreateRewardAccount(phone: string, name?: string) {
+  const db = getDb();
   const normalized = normalizePhone(phone);
-  let user = await prisma.user.findUnique({ where: { phone: normalized } });
+  let user = db.users.find((u) => u.phone === normalized);
   if (!user) {
-    user = await prisma.user.create({
-      data: {
-        phone: normalized,
-        name: name || "Guest",
-        role: "CUSTOMER",
-      },
-    });
+    const stamp = nowIso();
+    user = {
+      id: cuid(),
+      phone: normalized,
+      name: name || "Guest",
+      role: "CUSTOMER",
+      createdAt: stamp,
+      updatedAt: stamp,
+    };
+    db.users.push(user);
   }
-  let account = await prisma.rewardAccount.findUnique({
-    where: { phone: normalized },
-  });
+  let account = db.rewardAccounts.find((a) => a.phone === normalized);
   if (!account) {
-    account = await prisma.rewardAccount.create({
-      data: {
-        userId: user.id,
-        phone: normalized,
-        points: 0,
-        lifetimePts: 0,
-      },
-    });
+    const stamp = nowIso();
+    account = {
+      id: cuid(),
+      userId: user.id,
+      phone: normalized,
+      points: 0,
+      lifetimePts: 0,
+      createdAt: stamp,
+      updatedAt: stamp,
+    };
+    db.rewardAccounts.push(account);
   }
+  saveDb(true);
   return { user, account };
 }
 
 export async function getRewardSettings() {
-  const rows = await prisma.appSetting.findMany({
-    where: {
-      key: {
-        in: [
-          "reward_points_per_dollar",
-          "reward_redeem_points",
-          "reward_redeem_dollars",
-        ],
-      },
-    },
-  });
-  const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  const db = getDb();
+  const map = Object.fromEntries(db.appSettings.map((r) => [r.key, r.value]));
   return {
     pointsPerDollar: parseFloat(map.reward_points_per_dollar || "1"),
     redeemPoints: parseInt(map.reward_redeem_points || "100", 10),
@@ -59,23 +55,18 @@ export async function earnPointsForOrder(
   const points = Math.floor((subtotalCents / 100) * settings.pointsPerDollar);
   if (points <= 0) return 0;
   const { account } = await getOrCreateRewardAccount(phone, name);
-  await prisma.$transaction([
-    prisma.rewardAccount.update({
-      where: { id: account.id },
-      data: {
-        points: { increment: points },
-        lifetimePts: { increment: points },
-      },
-    }),
-    prisma.rewardTransaction.create({
-      data: {
-        accountId: account.id,
-        points,
-        reason: "Order earn",
-        orderId,
-      },
-    }),
-  ]);
+  account.points += points;
+  account.lifetimePts += points;
+  account.updatedAt = nowIso();
+  getDb().rewardTransactions.push({
+    id: cuid(),
+    accountId: account.id,
+    points,
+    reason: "Order earn",
+    orderId,
+    createdAt: nowIso(),
+  });
+  saveDb(true);
   return points;
 }
 
@@ -92,27 +83,23 @@ export async function redeemPoints(
   const points = multiples * settings.redeemPoints;
   const discountCents = multiples * Math.round(settings.redeemDollars * 100);
 
-  const account = await prisma.rewardAccount.findUnique({
-    where: { phone: normalizePhone(phone) },
-  });
+  const db = getDb();
+  const account = db.rewardAccounts.find((a) => a.phone === normalizePhone(phone));
   if (!account || account.points < points) {
     throw new Error("Insufficient reward points");
   }
 
-  await prisma.$transaction([
-    prisma.rewardAccount.update({
-      where: { id: account.id },
-      data: { points: { decrement: points } },
-    }),
-    prisma.rewardTransaction.create({
-      data: {
-        accountId: account.id,
-        points: -points,
-        reason: "Redeem discount",
-        orderId,
-      },
-    }),
-  ]);
+  account.points -= points;
+  account.updatedAt = nowIso();
+  db.rewardTransactions.push({
+    id: cuid(),
+    accountId: account.id,
+    points: -points,
+    reason: "Redeem discount",
+    orderId: orderId || null,
+    createdAt: nowIso(),
+  });
+  saveDb(true);
 
   return { points, discountCents };
 }
