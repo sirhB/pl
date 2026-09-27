@@ -62,17 +62,17 @@ export default function OrderPageClient() {
   const two = byo?.items.find((i) => i.slug === "fusion-bowl-2-protein");
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 pb-32">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div className="mx-auto max-w-7xl px-4 py-6 pb-32">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         {stationLabel ? (
-          <p className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-fusion-ink shadow-card">
-            <span className="h-2 w-2 rounded-full bg-fusion-green" />
+          <p className="inline-flex items-center gap-2 rounded-full border border-fusion-emerald/30 bg-fusion-emerald/10 px-4 py-2 text-sm font-medium text-fusion-emerald">
+            <span className="h-2 w-2 rounded-full bg-fusion-emerald" />
             {stationLabel} · {cart.orderType === "DINE_IN" ? "Dine in" : "To-go"}
           </p>
         ) : (
-          <p className="text-sm text-fusion-muted">Order for pickup at the truck</p>
+          <p className="font-brush text-sm text-fusion-amber">Street food · Big flavor</p>
         )}
-        <div className="flex rounded-full bg-white p-1 shadow-card">
+        <div className="flex rounded-full border border-fusion-line/40 bg-white/5 p-1">
           {(["TOGO", "DINE_IN"] as const).map((t) => (
             <button
               key={t}
@@ -80,8 +80,8 @@ export default function OrderPageClient() {
               onClick={() => cart.setOrderType(t)}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 cart.orderType === t
-                  ? "bg-fusion-ink text-white"
-                  : "text-fusion-muted hover:text-fusion-ink"
+                  ? "bg-fusion-gold text-fusion-void"
+                  : "text-fusion-muted hover:text-white"
               }`}
             >
               {t === "TOGO" ? "To-go" : "Dine in"}
@@ -91,19 +91,19 @@ export default function OrderPageClient() {
       </div>
 
       {loading && (
-        <p className="rounded-[24px] bg-white p-10 text-fusion-muted shadow-card">
-          Loading your fusion menu…
+        <p className="glass-panel rounded-[28px] p-10 text-fusion-muted">
+          Loading your fusion customizer…
         </p>
       )}
 
       {error && (
-        <div className="rounded-[24px] border border-red-200 bg-white p-6 shadow-card">
-          <p className="font-semibold text-fusion-red">Couldn’t load the menu</p>
+        <div className="glass-panel rounded-[28px] border-fusion-red/40 p-6">
+          <p className="font-semibold text-fusion-red-hot">Couldn’t load the menu</p>
           <p className="mt-1 text-sm text-fusion-muted">{error}</p>
           <button
             type="button"
             onClick={() => load()}
-            className="mt-4 rounded-full bg-fusion-ink px-5 py-2.5 text-sm font-semibold text-white"
+            className="mt-4 rounded-full bg-fusion-gold px-5 py-2.5 text-sm font-bold text-fusion-void"
           >
             Try again
           </button>
@@ -111,24 +111,16 @@ export default function OrderPageClient() {
       )}
 
       {!loading && !error && one && two && (
-        <div className="space-y-10">
-          <BowlBuilder oneProtein={one} twoProtein={two} />
-          <MenuBrowser categories={menu} />
+        <div className="space-y-12">
+          <BowlBuilder oneProtein={one} twoProtein={two} menu={menu} />
+          <div id="sides">
+            <MenuBrowser categories={menu} />
+          </div>
         </div>
       )}
 
       {!loading && !error && menu.length > 0 && (!one || !two) && (
-        <div className="space-y-6">
-          <div className="rounded-[24px] bg-white p-6 shadow-card">
-            <p className="font-semibold text-fusion-ink">Bowl builder unavailable</p>
-            <p className="mt-1 text-sm text-fusion-muted">
-              Build-your-bowl items are missing from the seeded menu. Showing the full menu
-              instead — run <code className="rounded bg-fusion-mist px-1">npm run db:setup</code>{" "}
-              to restore the builder.
-            </p>
-          </div>
-          <MenuBrowser categories={menu} />
-        </div>
+        <MenuBrowser categories={menu} />
       )}
 
       <CartDock />

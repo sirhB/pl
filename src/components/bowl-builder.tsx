@@ -1,63 +1,184 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { formatMoney } from "@/lib/utils";
 import { useCart } from "@/contexts/cart-context";
-import type { MenuItemDTO } from "@/lib/menu";
+import type { MenuCategory, MenuItemDTO } from "@/lib/menu";
 
 type Props = {
   oneProtein: MenuItemDTO;
   twoProtein: MenuItemDTO;
-  guestName?: string;
+  menu: MenuCategory[];
   onAdded?: () => void;
 };
 
-const PROTEIN_META: Record<string, { blurb: string; hue: string; emoji: string }> = {
-  Oxtails: { blurb: "Slow-braised, rich", hue: "#5c3d2e", emoji: "🍲" },
-  Salmon: { blurb: "Mango-glazed", hue: "#e07a5f", emoji: "🐟" },
-  "BBQ Fried Chicken": { blurb: "Crispy & sauced", hue: "#d4a017", emoji: "🍗" },
-  "Jerk Pork": { blurb: "Smoky island heat", hue: "#9b2226", emoji: "🌶️" },
-  "Jerk Chicken": { blurb: "Charred classic", hue: "#1faa4a", emoji: "🔥" },
+const PROTEIN_META: Record<string, { blurb: string; hue: string; short: string }> = {
+  Oxtails: { blurb: "Slow-braised", hue: "#5c3d2e", short: "OX" },
+  Salmon: { blurb: "Mango-glazed", hue: "#c45c3e", short: "SA" },
+  "BBQ Fried Chicken": { blurb: "Crispy & sauced", hue: "#d4a017", short: "BBQ" },
+  "Jerk Pork": { blurb: "Smoky heat", hue: "#9b2226", short: "JP" },
+  "Jerk Chicken": { blurb: "Charred classic", hue: "#16a34a", short: "JC" },
 };
 
-const SIDE_META: Record<string, { blurb: string; hue: string }> = {
-  "Rice & Peas": { blurb: "Coconut rice staple", hue: "#2d6a4f" },
-  "Jamaican Coleslaw": { blurb: "Bright & crisp", hue: "#95d5b2" },
-  "Rasta Pasta": { blurb: "Creamy Caribbean", hue: "#c1121f" },
+const BASES = [
+  { name: "Rice & Peas", priceDeltaCents: 0 },
+  { name: "Jerk Chicken Fried Rice", priceDeltaCents: 0 },
+  { name: "Rasta Pasta", priceDeltaCents: 200 },
+  { name: "Mac & Cheese", priceDeltaCents: 150 },
+];
+
+const SIDE_OPTIONS = [
+  { name: "Jamaican Coleslaw", priceDeltaCents: 0 },
+  { name: "Plantains", priceDeltaCents: 0 },
+  { name: "Rice & Peas", priceDeltaCents: 0 },
+  { name: "Rasta Pasta", priceDeltaCents: 200 },
+];
+
+type Addon = {
+  key: string;
+  name: string;
+  priceDeltaCents: number;
+  menuItemId?: string;
+  group?: string;
 };
 
-export function BowlBuilder({ oneProtein, twoProtein, guestName, onAdded }: Props) {
+function ToggleRow({
+  label,
+  blurb,
+  price,
+  on,
+  disabled,
+  hue,
+  short,
+  onToggle,
+}: {
+  label: string;
+  blurb?: string;
+  price?: number;
+  on: boolean;
+  disabled?: boolean;
+  hue?: string;
+  short?: string;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled && !on}
+      onClick={onToggle}
+      className={`group flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition active:scale-[0.97] ${
+        on
+          ? "border-fusion-amber/40 bg-fusion-green/10 shadow-glow-gold/20"
+          : "border-transparent hover:bg-white/5"
+      } ${disabled && !on ? "opacity-40" : ""}`}
+    >
+      <span
+        className="flex h-11 w-11 items-center justify-center rounded-full text-[10px] font-extrabold tracking-wide text-white shadow-glass"
+        style={{ background: hue || "#3f3f46" }}
+      >
+        {short || label.slice(0, 2).toUpperCase()}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-white">{label}</span>
+        <span className="block text-xs text-fusion-muted">
+          {blurb || ""}
+          {typeof price === "number" && price > 0 ? ` · +${formatMoney(price)}` : ""}
+        </span>
+      </span>
+      <span
+        className="toggle-track"
+        data-on={on ? "true" : "false"}
+        data-disabled={disabled && !on ? "true" : "false"}
+      >
+        <span className="toggle-thumb" />
+      </span>
+    </button>
+  );
+}
+
+export function BowlBuilder({ oneProtein, twoProtein, menu, onAdded }: Props) {
   const cart = useCart();
-  const [proteinCount, setProteinCount] = useState<1 | 2>(1);
+  const [tier, setTier] = useState<1 | 2>(1);
+  const [base, setBase] = useState(BASES[0].name);
   const [proteins, setProteins] = useState<string[]>(["Jerk Chicken"]);
-  const [sides, setSides] = useState<string[]>(["Rice & Peas", "Jamaican Coleslaw"]);
-  const [notes, setNotes] = useState("");
+  const [sides, setSides] = useState<string[]>(["Jamaican Coleslaw", "Plantains"]);
+  const [addons, setAddons] = useState<string[]>([]);
+  const [bowlKey, setBowlKey] = useState(0);
+  const [priceFlash, setPriceFlash] = useState(0);
   const [addedFlash, setAddedFlash] = useState(false);
-  const [panel, setPanel] = useState<"proteins" | "sides">("proteins");
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  const activeItem = proteinCount === 1 ? oneProtein : twoProtein;
-  const proteinGroup = activeItem.modifierGroups.find((g) => g.name === "Proteins");
-  const sideGroup = activeItem.modifierGroups.find((g) => g.name === "Sides");
-  const maxProteins = proteinCount;
-  const maxSides = sideGroup?.maxSelect ?? 3;
+  const activeItem = tier === 1 ? oneProtein : twoProtein;
+  const proteinOptions =
+    activeItem.modifierGroups.find((g) => g.name === "Proteins")?.options.map((o) => o.name) ||
+    Object.keys(PROTEIN_META);
 
-  const sideDelta = useMemo(() => {
-    if (!sideGroup) return 0;
-    return sides.reduce((sum, name) => {
-      const opt = sideGroup.options.find((o) => o.name === name);
-      return sum + (opt?.priceDeltaCents || 0);
-    }, 0);
-  }, [sides, sideGroup]);
+  const drinks = menu.find((c) => c.slug === "drinks")?.items || [];
+  const empanadas = (menu.find((c) => c.slug === "empanadas")?.items || []).filter(
+    (i) => i.slug === "chicken-empanada" || i.slug === "beef-empanada"
+  );
+  const wingItem = menu.find((c) => c.slug === "wings")?.items.find((i) => i.slug === "wings-6");
 
-  const unitPrice = activeItem.priceCents + sideDelta;
-  const ready =
-    proteins.length === maxProteins && sides.length >= (sideGroup?.minSelect || 1);
+  const addonCatalog: Addon[] = useMemo(() => {
+    const list: Addon[] = [];
+    for (const e of empanadas) {
+      list.push({
+        key: `emp-${e.slug}`,
+        name: e.name,
+        priceDeltaCents: e.priceCents,
+        menuItemId: e.id,
+        group: "Empanadas",
+      });
+    }
+    if (wingItem) {
+      for (const flavor of ["Jerk", "Mango Jerk", "BBQ Jerk"]) {
+        list.push({
+          key: `wing-${flavor}`,
+          name: `Wings 6pc · ${flavor}`,
+          priceDeltaCents: wingItem.priceCents,
+          menuItemId: wingItem.id,
+          group: "Wings",
+        });
+      }
+    }
+    for (const d of drinks) {
+      list.push({
+        key: `drink-${d.slug}`,
+        name: d.name,
+        priceDeltaCents: d.priceCents,
+        menuItemId: d.id,
+        group: "Drinks",
+      });
+    }
+    return list;
+  }, [empanadas, wingItem, drinks]);
 
-  function setSize(n: 1 | 2) {
-    setProteinCount(n);
+  const baseDelta = BASES.find((b) => b.name === base)?.priceDeltaCents || 0;
+  const sideDelta = sides.reduce((sum, s) => {
+    const opt = SIDE_OPTIONS.find((o) => o.name === s);
+    return sum + (opt?.priceDeltaCents || 0);
+  }, 0);
+  const addonDelta = addons.reduce((sum, key) => {
+    const a = addonCatalog.find((x) => x.key === key);
+    return sum + (a?.priceDeltaCents || 0);
+  }, 0);
+
+  const bowlPrice = activeItem.priceCents + baseDelta + sideDelta;
+  const totalPrice = bowlPrice + addonDelta;
+
+  useEffect(() => {
+    setPriceFlash((n) => n + 1);
+  }, [totalPrice]);
+
+  function bumpBowl() {
+    setBowlKey((k) => k + 1);
+  }
+
+  function setTierSafe(n: 1 | 2) {
+    setTier(n);
     setProteins((prev) => prev.slice(0, n));
-    setPanel("proteins");
+    bumpBowl();
   }
 
   function toggleProtein(name: string) {
@@ -66,10 +187,11 @@ export function BowlBuilder({ oneProtein, twoProtein, guestName, onAdded }: Prop
         if (prev.length <= 1) return prev;
         return prev.filter((p) => p !== name);
       }
-      if (maxProteins === 1) return [name];
-      if (prev.length >= maxProteins) return [...prev.slice(1), name];
+      if (tier === 1) return [name];
+      if (prev.length >= 2) return [...prev.slice(1), name];
       return [...prev, name];
     });
+    bumpBowl();
   }
 
   function toggleSide(name: string) {
@@ -78,277 +200,340 @@ export function BowlBuilder({ oneProtein, twoProtein, guestName, onAdded }: Prop
         if (prev.length <= 1) return prev;
         return prev.filter((s) => s !== name);
       }
-      if (prev.length >= maxSides) return [...prev.slice(1), name];
+      if (prev.length >= 3) return [...prev.slice(1), name];
       return [...prev, name];
     });
+    bumpBowl();
   }
 
-  function addToCart() {
-    if (!ready) return;
+  function toggleAddon(key: string) {
+    setAddons((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  }
+
+  const proteinCapReached = proteins.length >= tier;
+
+  function addToOrder() {
+    if (proteins.length !== tier || sides.length < 1) return;
     const modifiers = [
-      ...proteins.map((p) => ({ groupName: "Proteins", optionName: p, priceDeltaCents: 0 })),
-      ...sides.map((s) => {
-        const opt = sideGroup?.options.find((o) => o.name === s);
-        return {
-          groupName: "Sides",
-          optionName: s,
-          priceDeltaCents: opt?.priceDeltaCents || 0,
-        };
-      }),
+      { groupName: "Base", optionName: base, priceDeltaCents: baseDelta },
+      ...proteins.map((p) => ({
+        groupName: "Proteins",
+        optionName: p,
+        priceDeltaCents: 0,
+      })),
+      ...sides.map((s) => ({
+        groupName: "Sides",
+        optionName: s,
+        priceDeltaCents: SIDE_OPTIONS.find((o) => o.name === s)?.priceDeltaCents || 0,
+      })),
     ];
     cart.addItem({
       menuItemId: activeItem.id,
-      name: `${proteinCount} Protein Bowl · ${proteins.join(" + ")}`,
-      unitPriceCents: unitPrice,
+      name: `${tier} Protein Bowl · ${proteins.join(" + ")}`,
+      unitPriceCents: bowlPrice,
       quantity: 1,
       modifiers,
-      notes: notes || undefined,
     });
+    for (const key of addons) {
+      const a = addonCatalog.find((x) => x.key === key);
+      if (!a?.menuItemId) continue;
+      cart.addItem({
+        menuItemId: a.menuItemId,
+        name: a.name,
+        unitPriceCents: a.priceDeltaCents,
+        quantity: 1,
+        modifiers: a.group === "Wings"
+          ? [{ groupName: "Wing Flavor", optionName: a.name.split(" · ")[1] || "Jerk" }]
+          : [],
+      });
+    }
     setAddedFlash(true);
     setTimeout(() => setAddedFlash(false), 1600);
     onAdded?.();
   }
 
-  const hello = guestName ? `Hello, ${guestName}` : "Jamaican Fusion, Your Way";
+  const badges = [
+    ...proteins.map((p) => ({ label: p, tone: "gold" as const })),
+    { label: base, tone: "green" as const },
+    ...sides.filter((s) => s !== base).map((s) => ({ label: s, tone: "green" as const })),
+  ];
+
+  const togglePanel = (
+    <div className="space-y-6">
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-fusion-gold">
+            Select protein
+          </h3>
+          <span className="rounded-full bg-fusion-red/20 px-2.5 py-0.5 text-[11px] font-bold text-fusion-red-hot">
+            {proteins.length}/{tier}
+          </span>
+        </div>
+        <div className="space-y-1.5">
+          {proteinOptions.map((name) => {
+            const on = proteins.includes(name);
+            const meta = PROTEIN_META[name];
+            return (
+              <ToggleRow
+                key={name}
+                label={name}
+                blurb={meta?.blurb}
+                hue={meta?.hue}
+                short={meta?.short}
+                on={on}
+                disabled={proteinCapReached}
+                onToggle={() => toggleProtein(name)}
+              />
+            );
+          })}
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-fusion-emerald">
+            Select sides
+          </h3>
+          <span className="rounded-full bg-fusion-emerald/15 px-2.5 py-0.5 text-[11px] font-bold text-fusion-emerald">
+            {sides.length}/3
+          </span>
+        </div>
+        <div className="space-y-1.5">
+          {SIDE_OPTIONS.map((opt) => (
+            <ToggleRow
+              key={opt.name}
+              label={opt.name}
+              blurb="Fresh daily"
+              price={opt.priceDeltaCents}
+              hue="#166534"
+              on={sides.includes(opt.name)}
+              onToggle={() => toggleSide(opt.name)}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-fusion-red-hot">
+          Add-ons & extras
+        </h3>
+        <div className="space-y-1.5">
+          {addonCatalog.map((a) => (
+            <ToggleRow
+              key={a.key}
+              label={a.name}
+              blurb={a.group}
+              price={a.priceDeltaCents}
+              hue={a.group === "Drinks" ? "#b45309" : a.group === "Wings" ? "#dc2626" : "#854d0e"}
+              on={addons.includes(a.key)}
+              onToggle={() => toggleAddon(a.key)}
+            />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
 
   return (
-    <section className="relative overflow-hidden rounded-[28px] bg-white shadow-float animate-fade-up">
-      <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
-        {/* Left: guided workflow */}
-        <div className="relative z-10 flex flex-col p-6 sm:p-8 lg:p-10">
-          <p className="text-sm font-semibold text-fusion-green">{hello}</p>
-          <h1 className="mt-1 font-display text-3xl leading-tight text-fusion-ink sm:text-4xl lg:text-[2.6rem]">
-            What kind of bowl
-            <br />
-            do you want today?
+    <section className="relative animate-fade-up">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="font-brush text-lg text-fusion-amber">Jamaican Fusion, Your Way</p>
+          <h1 className="font-display text-3xl font-extrabold uppercase tracking-wide text-white sm:text-4xl">
+            Build Your Fusion Bowl
           </h1>
+        </div>
+        <button
+          type="button"
+          className="rounded-full border border-fusion-line bg-white/5 px-4 py-2 text-sm font-semibold text-white lg:hidden"
+          onClick={() => setSheetOpen(true)}
+        >
+          Customize · {proteins.length}P
+        </button>
+      </div>
 
-          {/* Size */}
-          <div className="mt-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fusion-muted">
-              Select size
-            </p>
-            <div className="mt-3 flex gap-3">
-              {([1, 2] as const).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setSize(n)}
-                  className={`flex h-14 min-w-[4.5rem] flex-col items-center justify-center rounded-2xl px-4 text-sm font-semibold transition ${
-                    proteinCount === n
-                      ? "bg-fusion-ink text-white shadow-soft"
-                      : "bg-fusion-mist text-fusion-muted hover:bg-fusion-line"
-                  }`}
-                >
-                  <span className="text-lg leading-none">{n === 1 ? "1P" : "2P"}</span>
-                  <span className="mt-0.5 text-[10px] opacity-80">
-                    {formatMoney(n === 1 ? oneProtein.priceCents : twoProtein.priceCents)}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-sm text-fusion-muted">
-              {proteinCount === 1
-                ? "One hero protein + your sides"
-                : "Double protein — full fusion"}
-            </p>
-          </div>
+      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.15fr_0.95fr]">
+        {/* LEFT */}
+        <aside className="glass-panel order-2 flex flex-col rounded-[28px] p-5 shadow-glass xl:order-1">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-fusion-muted">
+            Configuration
+          </p>
 
-          {/* Step chips */}
-          <div className="mt-7 flex gap-2">
-            {(
-              [
-                { id: "proteins" as const, label: "Proteins", count: `${proteins.length}/${maxProteins}` },
-                { id: "sides" as const, label: "Sides", count: `${sides.length}/${maxSides}` },
-              ]
-            ).map((s) => (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {([1, 2] as const).map((n) => (
               <button
-                key={s.id}
+                key={n}
                 type="button"
-                onClick={() => setPanel(s.id)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  panel === s.id
-                    ? "bg-fusion-green text-white"
-                    : "bg-fusion-mist text-fusion-ink hover:bg-fusion-line"
+                onClick={() => setTierSafe(n)}
+                className={`rounded-2xl border px-3 py-4 text-left transition active:scale-[0.97] ${
+                  tier === n
+                    ? "border-fusion-gold bg-fusion-gold/10 shadow-glow-gold"
+                    : "border-white/10 bg-black/30 hover:border-fusion-amber/30"
                 }`}
               >
-                {s.label}
-                <span className="ml-2 opacity-70">{s.count}</span>
+                <div className="font-display text-sm font-bold uppercase tracking-wide">
+                  {n} Protein{n > 1 ? "s" : ""}
+                </div>
+                <div className="mt-1 font-display text-2xl text-fusion-gold">
+                  {formatMoney(n === 1 ? oneProtein.priceCents : twoProtein.priceCents)}
+                </div>
               </button>
             ))}
           </div>
 
-          {/* Compact selected summary on left for mobile flow continuity */}
-          <div className="mt-6 space-y-2 lg:hidden">
-            {(panel === "proteins" ? proteinGroup?.options : sideGroup?.options)?.map((opt) => {
-              const on =
-                panel === "proteins"
-                  ? proteins.includes(opt.name)
-                  : sides.includes(opt.name);
-              return (
+          <div className="mt-6">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-fusion-muted">
+              Select base
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {BASES.map((b) => (
                 <button
-                  key={opt.id}
+                  key={b.name}
                   type="button"
-                  onClick={() =>
-                    panel === "proteins" ? toggleProtein(opt.name) : toggleSide(opt.name)
-                  }
-                  className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
-                    on
-                      ? "border-fusion-green/40 bg-fusion-green/5"
-                      : "border-fusion-line bg-fusion-mist/60"
+                  onClick={() => {
+                    setBase(b.name);
+                    bumpBowl();
+                  }}
+                  className={`rounded-full px-3 py-2 text-xs font-semibold transition active:scale-[0.97] ${
+                    base === b.name
+                      ? "bg-fusion-gold text-fusion-void"
+                      : "bg-white/5 text-fusion-muted hover:bg-white/10 hover:text-white"
                   }`}
                 >
-                  <span className="font-semibold">{opt.name}</span>
-                  <span
-                    className="toggle-track"
-                    data-on={on ? "true" : "false"}
-                    aria-hidden
-                  >
-                    <span className="toggle-thumb" />
-                  </span>
+                  {b.name}
+                  {b.priceDeltaCents > 0 ? ` +${formatMoney(b.priceDeltaCents)}` : ""}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
 
-          <label className="mt-6 block">
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-fusion-muted">
-              Special requests
-            </span>
-            <input
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="No coleslaw, extra jerk…"
-              className="mt-2 w-full rounded-2xl border border-fusion-line bg-fusion-mist/50 px-4 py-3 text-sm outline-none transition focus:border-fusion-green focus:bg-white"
-            />
-          </label>
-
-          <div className="mt-auto pt-8">
-            <div className="mb-3 font-display text-4xl text-fusion-ink">
-              {formatMoney(unitPrice)}
+          <div className="mt-auto border-t border-fusion-line/40 pt-5">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-fusion-muted">
+                  Total
+                </p>
+                <p
+                  key={priceFlash}
+                  className="font-display text-4xl font-extrabold text-white animate-price-flash"
+                >
+                  {formatMoney(totalPrice)}
+                </p>
+              </div>
+              <p className="pb-1 text-xs text-fusion-muted">
+                Bowl {formatMoney(bowlPrice)}
+                {addonDelta > 0 ? ` + extras` : ""}
+              </p>
             </div>
             <button
               type="button"
-              disabled={!ready}
-              onClick={addToCart}
-              className="flex w-full items-center justify-between rounded-full bg-fusion-green px-6 py-4 text-left font-semibold text-white shadow-soft transition hover:bg-fusion-green-dark disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={addToOrder}
+              disabled={proteins.length !== tier}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-fusion-green px-5 py-4 text-sm font-bold uppercase tracking-wide text-white shadow-glow transition hover:bg-fusion-emerald disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <span>{addedFlash ? "Added to cart ✓" : "Add to cart"}</span>
-              <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold">
-                ~{activeItem.prepMinutes} min
+              {addedFlash ? "Added ✓" : "Add to Order"}
+              <span className="rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold normal-case tracking-normal">
+                ~{activeItem.prepMinutes} min pickup
               </span>
             </button>
-            {!ready && (
-              <p className="mt-2 text-xs text-fusion-muted">
-                Pick {maxProteins} protein{maxProteins > 1 ? "s" : ""} and at least one side.
-              </p>
-            )}
           </div>
-        </div>
+        </aside>
 
-        {/* Right: visual selector panel */}
-        <div className="relative hidden min-h-[560px] bg-fusion-mist/70 p-6 lg:block lg:p-8">
-          <div className="relative z-10 rounded-[24px] bg-white p-5 shadow-card animate-slide-in">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-xl text-fusion-ink">
-                {panel === "proteins" ? "Select protein:" : "Select sides:"}
-              </h2>
-              <span className="rounded-full bg-fusion-mist px-3 py-1 text-xs font-semibold text-fusion-muted">
-                {panel === "proteins"
-                  ? `${proteins.length} added`
-                  : `${sides.length} added`}
-              </span>
+        {/* CENTER */}
+        <div className="order-1 xl:order-2">
+          <div className="glass-panel relative overflow-hidden rounded-[28px] shadow-glass">
+            <div className="bowl-canvas relative flex min-h-[360px] items-center justify-center p-6 sm:min-h-[460px]">
+              <div
+                key={bowlKey}
+                className="relative h-56 w-56 animate-bowl-pop sm:h-72 sm:w-72"
+              >
+                <div className="absolute inset-0 rounded-full border border-fusion-amber/30 bg-gradient-to-b from-zinc-800 to-black shadow-[inset_0_0_60px_rgba(0,0,0,0.65)]" />
+                <div className="absolute inset-6 overflow-hidden rounded-full border border-white/10">
+                  <Image
+                    src="/images/menu-flyer.jpg"
+                    alt="Fusion bowl preview"
+                    fill
+                    className="object-cover object-center opacity-90"
+                    sizes="288px"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="rounded-full bg-black/55 px-3 py-1 text-center backdrop-blur-sm">
+                    <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-fusion-gold">
+                      {tier}P Bowl
+                    </p>
+                    <p className="text-xs font-semibold text-white">
+                      {proteins.join(" + ") || "Pick protein"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating badges */}
+              <div className="pointer-events-none absolute inset-0">
+                {badges.slice(0, 5).map((b, i) => {
+                  const positions = [
+                    "left-[6%] top-[18%]",
+                    "right-[5%] top-[22%]",
+                    "left-[8%] bottom-[22%]",
+                    "right-[6%] bottom-[18%]",
+                    "left-1/2 top-[8%] -translate-x-1/2",
+                  ];
+                  return (
+                    <span
+                      key={`${b.label}-${i}-${bowlKey}`}
+                      className={`absolute ${positions[i]} animate-badge-in rounded-full border border-fusion-line bg-black/60 px-3 py-1.5 text-[11px] font-semibold backdrop-blur-md ${
+                        b.tone === "gold" ? "text-fusion-gold" : "text-fusion-emerald"
+                      }`}
+                      style={{ animationDelay: `${i * 0.05}s` }}
+                    >
+                      {b.label}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
-
-            <ul className="max-h-[340px] space-y-2 overflow-y-auto pr-1">
-              {panel === "proteins" &&
-                (proteinGroup?.options || []).map((opt, i) => {
-                  const on = proteins.includes(opt.name);
-                  const meta = PROTEIN_META[opt.name];
-                  return (
-                    <li key={opt.id} style={{ animationDelay: `${i * 0.04}s` }} className="animate-fade-up">
-                      <button
-                        type="button"
-                        onClick={() => toggleProtein(opt.name)}
-                        className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
-                          on
-                            ? "border-fusion-green/30 bg-fusion-green/5"
-                            : "border-transparent hover:bg-fusion-mist"
-                        }`}
-                      >
-                        <span
-                          className="flex h-12 w-12 items-center justify-center rounded-full text-lg shadow-soft"
-                          style={{ background: meta?.hue || "#ddd", color: "#fff" }}
-                        >
-                          {meta?.emoji || "•"}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block font-semibold text-fusion-ink">{opt.name}</span>
-                          <span className="block text-xs text-fusion-muted">
-                            {meta?.blurb || "Prime Fusion protein"}
-                          </span>
-                        </span>
-                        <span className="toggle-track" data-on={on ? "true" : "false"}>
-                          <span className="toggle-thumb" />
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-
-              {panel === "sides" &&
-                (sideGroup?.options || []).map((opt, i) => {
-                  const on = sides.includes(opt.name);
-                  const meta = SIDE_META[opt.name];
-                  return (
-                    <li key={opt.id} style={{ animationDelay: `${i * 0.04}s` }} className="animate-fade-up">
-                      <button
-                        type="button"
-                        onClick={() => toggleSide(opt.name)}
-                        className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
-                          on
-                            ? "border-fusion-green/30 bg-fusion-green/5"
-                            : "border-transparent hover:bg-fusion-mist"
-                        }`}
-                      >
-                        <span
-                          className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold text-white shadow-soft"
-                          style={{ background: meta?.hue || "#888" }}
-                        >
-                          {opt.name.slice(0, 1)}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block font-semibold text-fusion-ink">{opt.name}</span>
-                          <span className="block text-xs text-fusion-muted">
-                            {meta?.blurb || "Side"}
-                            {opt.priceDeltaCents > 0
-                              ? ` · +${formatMoney(opt.priceDeltaCents)}`
-                              : ""}
-                          </span>
-                        </span>
-                        <span className="toggle-track" data-on={on ? "true" : "false"}>
-                          <span className="toggle-thumb" />
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-            </ul>
-          </div>
-
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[46%] overflow-hidden">
-            <Image
-              src="/images/menu-flyer.jpg"
-              alt="Prime Fusion bowl"
-              fill
-              className="object-cover object-top opacity-95"
-              sizes="(max-width: 1024px) 0px, 50vw"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-fusion-mist via-fusion-mist/20 to-transparent" />
           </div>
         </div>
+
+        {/* RIGHT desktop */}
+        <aside className="glass-panel order-3 hidden max-h-[720px] overflow-y-auto rounded-[28px] p-5 shadow-glass xl:block">
+          <p className="mb-4 font-brush text-base text-fusion-amber">Toggle your way</p>
+          {togglePanel}
+        </aside>
       </div>
+
+      {/* Mobile bottom sheet */}
+      {sheetOpen && (
+        <div className="fixed inset-0 z-50 xl:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60"
+            aria-label="Close customizer"
+            onClick={() => setSheetOpen(false)}
+          />
+          <div className="glass-panel absolute inset-x-0 bottom-0 max-h-[82vh] overflow-y-auto rounded-t-[28px] p-5 pb-8 shadow-glass animate-fade-up">
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/20" />
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-display text-lg font-bold uppercase tracking-wide">
+                Customize
+              </h2>
+              <button
+                type="button"
+                className="text-sm font-semibold text-fusion-gold"
+                onClick={() => setSheetOpen(false)}
+              >
+                Done
+              </button>
+            </div>
+            {togglePanel}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

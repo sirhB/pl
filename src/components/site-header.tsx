@@ -6,11 +6,9 @@ import { useCart } from "@/contexts/cart-context";
 import { formatMoney } from "@/lib/utils";
 
 const links = [
-  { href: "/order", label: "Build bowl" },
-  { href: "/order#menu", label: "Menu" },
-  { href: "/rewards", label: "Rewards" },
-  { href: "/kitchen", label: "Kitchen" },
-  { href: "/admin", label: "Admin" },
+  { href: "/order", label: "Build Bowl" },
+  { href: "/order#menu", label: "Combos" },
+  { href: "/order#sides", label: "Sides & Drinks" },
 ];
 
 export function SiteHeader() {
@@ -20,19 +18,19 @@ export function SiteHeader() {
 
   if (ops) {
     return (
-      <header className="border-b border-black/5 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <Link href="/" className="font-display text-lg text-fusion-ink">
-            Prime <span className="text-fusion-green">Fusion</span>
+      <header className="border-b border-fusion-line/30 bg-fusion-black/90 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+          <Link href="/" className="font-display text-sm font-bold uppercase tracking-widest text-fusion-gold">
+            ♛ Prime Fusion
           </Link>
-          <nav className="flex gap-4 text-sm font-medium text-fusion-muted">
-            <Link href="/order" className="hover:text-fusion-ink">
+          <nav className="flex gap-4 text-sm text-fusion-muted">
+            <Link href="/order" className="hover:text-white">
               Guest order
             </Link>
-            <Link href="/admin" className="hover:text-fusion-ink">
+            <Link href="/admin" className="hover:text-white">
               Admin
             </Link>
-            <Link href="/kitchen" className="hover:text-fusion-ink">
+            <Link href="/kitchen" className="hover:text-white">
               Kitchen
             </Link>
           </nav>
@@ -42,28 +40,25 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-black/5 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-        <Link href="/" className="group flex items-center gap-2">
+    <header className="sticky top-0 z-40 border-b border-fusion-line/30 bg-fusion-void/80 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4">
+        <Link href="/" className="flex items-center gap-2">
           <span className="text-fusion-gold">♛</span>
-          <span className="font-display text-xl tracking-tight text-fusion-ink">
-            Prime <span className="text-fusion-green">Fusion</span>
+          <span className="font-display text-sm font-extrabold uppercase tracking-[0.18em] text-white sm:text-base">
+            Prime <span className="text-fusion-gold">Fusion</span>
           </span>
         </Link>
-        <nav className="hidden items-center gap-1 rounded-full bg-fusion-mist p-1 text-sm font-semibold sm:flex">
-          {links.slice(0, 3).map((l) => {
-            const active =
-              l.href === "/order"
-                ? pathname === "/order" || pathname?.startsWith("/order/qr")
-                : pathname?.startsWith(l.href.replace("#menu", ""));
+        <nav className="hidden items-center gap-1 rounded-full border border-fusion-line/40 bg-white/5 p-1 text-sm font-semibold md:flex">
+          {links.map((l) => {
+            const active = l.href === "/order" && pathname?.startsWith("/order");
             return (
               <Link
                 key={l.href}
                 href={l.href}
                 className={`rounded-full px-4 py-2 transition ${
                   active
-                    ? "bg-fusion-ink text-white shadow-soft"
-                    : "text-fusion-muted hover:text-fusion-ink"
+                    ? "bg-fusion-gold text-fusion-void"
+                    : "text-fusion-muted hover:text-white"
                 }`}
               >
                 {l.label}
@@ -73,9 +68,12 @@ export function SiteHeader() {
         </nav>
         <Link
           href="/checkout"
-          className="rounded-full bg-fusion-ink px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-fusion-green"
+          className="rounded-full border border-fusion-amber/40 bg-fusion-gold/10 px-4 py-2 text-sm font-bold text-fusion-gold transition hover:bg-fusion-gold hover:text-fusion-void"
         >
-          Cart{cart.itemCount ? ` · ${formatMoney(cart.subtotalCents)}` : ""}
+          Cart
+          {cart.itemCount
+            ? ` ${formatMoney(cart.subtotalCents)} (${cart.itemCount})`
+            : ""}
         </Link>
       </div>
     </header>
