@@ -1,49 +1,48 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
-// Glassmorphism utility classes
-export const glassStyles = {
-  card: "glass-morphism rounded-2xl p-6",
-  cardHover: "glass-morphism rounded-2xl p-6 glass-card-hover cursor-pointer",
-  gold: "glass-gold rounded-2xl p-6",
-  navigation: "glass-navigation sticky top-0 z-50",
-  button: {
-    primary: "glass-button-primary px-6 py-3 rounded-xl font-semibold",
-    secondary: "glass-button-secondary px-6 py-3 rounded-xl font-semibold",
-  },
-  modal: "glass-morphism rounded-3xl p-8 max-w-2xl mx-auto",
+export function formatMoney(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(cents / 100);
 }
 
-// Animation utilities
-export const animations = {
-  fadeIn: "animate-in fade-in duration-700",
-  slideUp: "animate-in slide-in-from-bottom-10 duration-700",
-  float: "animate-float",
-  shimmer: "animate-glass-shimmer",
+export function formatPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return phone;
 }
 
-// Responsive breakpoints
-export const breakpoints = {
-  mobile: "max-w-sm",
-  tablet: "max-w-4xl",
-  desktop: "max-w-7xl",
+export function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  if (phone.startsWith("+")) return phone;
+  return `+${digits}`;
 }
 
-// Color palette helpers
-export const colors = {
-  gold: {
-    primary: "#f59e0b",
-    secondary: "#d97706", 
-    dark: "#b45309",
-  },
-  glass: {
-    white: "rgba(255, 255, 255, 0.1)",
-    light: "rgba(255, 255, 255, 0.05)",
-    dark: "rgba(0, 0, 0, 0.05)",
-    gold: "rgba(251, 191, 36, 0.15)",
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+export function parseTags(tags: string): string[] {
+  try {
+    const parsed = JSON.parse(tags);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
 }
