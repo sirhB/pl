@@ -738,9 +738,9 @@ export async function seedDatabase(force = false) {
   }
 
   for (const s of [
-    { code: "truck-window", label: "Truck Window — To-Go", orderType: "TOGO" as const },
-    { code: "picnic-a", label: "Picnic Table A — Dine In", orderType: "DINE_IN" as const },
-    { code: "picnic-b", label: "Picnic Table B — Dine In", orderType: "DINE_IN" as const },
+    { code: "truck-window", label: "Truck Window", orderType: "TOGO" as const },
+    { code: "picnic-a", label: "Picnic Table A", orderType: "DINE_IN" as const },
+    { code: "picnic-b", label: "Picnic Table B", orderType: "DINE_IN" as const },
     { code: "catering-prep", label: "Catering Pickup", orderType: "TOGO" as const },
   ]) {
     db.qrStations.push({
